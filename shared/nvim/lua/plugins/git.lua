@@ -13,7 +13,9 @@ return {
         map("<leader>hs", gs.stage_hunk, "Stage hunk")
         map("<leader>hr", gs.reset_hunk, "Reset hunk")
         map("<leader>hp", gs.preview_hunk, "Preview hunk")
-        map("<leader>hb", function() gs.blame_line({ full = true }) end, "Blame line")
+        map("<leader>hb", function()
+          gs.blame_line({ full = true })
+        end, "Blame line")
       end,
     },
   },

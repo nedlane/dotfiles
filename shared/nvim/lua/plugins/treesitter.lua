@@ -5,8 +5,19 @@
 -- 'indentexpr'. Requires Neovim 0.12+ and the `tree-sitter` CLI to compile
 -- parsers. The M1 grammar is registered + started separately in m1.lua.
 local ENSURE = {
-  "lua", "vim", "vimdoc", "bash", "rust", "toml",
-  "json", "yaml", "markdown", "markdown_inline", "c", "diff", "regex",
+  "lua",
+  "vim",
+  "vimdoc",
+  "bash",
+  "rust",
+  "toml",
+  "json",
+  "yaml",
+  "markdown",
+  "markdown_inline",
+  "c",
+  "diff",
+  "regex",
 }
 
 return {
@@ -23,9 +34,15 @@ return {
       -- on every startup.
       local installed = require("nvim-treesitter").get_installed()
       local have = {}
-      for _, l in ipairs(installed) do have[l] = true end
-      local missing = vim.tbl_filter(function(l) return not have[l] end, ENSURE)
-      if #missing > 0 then require("nvim-treesitter").install(missing) end
+      for _, l in ipairs(installed) do
+        have[l] = true
+      end
+      local missing = vim.tbl_filter(function(l)
+        return not have[l]
+      end, ENSURE)
+      if #missing > 0 then
+        require("nvim-treesitter").install(missing)
+      end
 
       -- The rewrite no longer wires highlight/indent automatically. Start both
       -- per-buffer for any filetype whose parser is installed. Guarded so files
@@ -34,8 +51,12 @@ return {
         group = vim.api.nvim_create_augroup("TSHighlight", { clear = true }),
         callback = function(args)
           local lang = vim.treesitter.language.get_lang(vim.bo[args.buf].filetype)
-          if not lang then return end
-          if not pcall(vim.treesitter.language.add, lang) then return end
+          if not lang then
+            return
+          end
+          if not pcall(vim.treesitter.language.add, lang) then
+            return
+          end
           pcall(vim.treesitter.start, args.buf, lang)
           vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
         end,

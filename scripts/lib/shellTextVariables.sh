@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2034  # This file is a library of variables for callers.
+
 # ----------------------------------
 # Colors
 # ----------------------------------

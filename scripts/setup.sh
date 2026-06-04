@@ -36,10 +36,15 @@ install_shell_tools() {
   clone https://github.com/zsh-users/zsh-syntax-highlighting  "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
   clone https://github.com/catppuccin/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/catppuccin_highlight" || true
 
-  local hl_dir theme
+  local candidate hl_dir theme
   hl_dir="$ZSH_CUSTOM/plugins/catppuccin_highlight"
   if [[ -d "$hl_dir" && ! -f "$hl_dir/catppuccin_highlight.plugin.zsh" ]]; then
-    theme="$(ls "$hl_dir"/*mocha*.zsh 2>/dev/null | head -1 || true)"
+    theme=
+    for candidate in "$hl_dir"/*mocha*.zsh; do
+      [[ -f "$candidate" ]] || continue
+      theme="$candidate"
+      break
+    done
     [[ -n "$theme" ]] && printf 'source %q\n' "$theme" > "$hl_dir/catppuccin_highlight.plugin.zsh"
   fi
 

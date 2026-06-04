@@ -4,7 +4,7 @@ local opt = vim.opt
 opt.number = true
 opt.relativenumber = true
 opt.cursorline = true
-opt.signcolumn = "yes"          -- stable gutter (LSP/git signs don't shift text)
+opt.signcolumn = "yes" -- stable gutter (LSP/git signs don't shift text)
 opt.scrolloff = 8
 opt.wrap = false
 

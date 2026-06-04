@@ -14,6 +14,7 @@ DIR="${DOTFILES_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles"
 BACKUP="$HOME/dotfiles-pre-link-backup-$(date +%Y%m%d-%H%M%S)"
 source "$DIR/scripts/lib/host.sh"
+changed=0
 
 # --- detect host -----------------------------------------------------------
 host="${1:-$(dotfiles_detect_host)}"
@@ -42,20 +43,21 @@ echo
 
 link_one() {
   local src="$1" dst="$2"
-  [ -e "$src" ] || { echo "skip (no source): ${src#$DIR/}"; return; }
+  [ -e "$src" ] || { echo "skip (no source): ${src#"$DIR"/}"; return; }
   mkdir -p "$(dirname "$dst")"
 
   if [ -L "$dst" ] && [ "$(readlink "$dst")" = "$src" ]; then
-    echo "ok        ${dst#$HOME/}"
+    echo "ok        ${dst#"$HOME"/}"
     return
   fi
   if [ -e "$dst" ] || [ -L "$dst" ]; then
-    mkdir -p "$BACKUP/$(dirname "${dst#$HOME/}")"
-    mv "$dst" "$BACKUP/${dst#$HOME/}"
-    echo "backed up ${dst#$HOME/}"
+    mkdir -p "$BACKUP/$(dirname "${dst#"$HOME"/}")"
+    mv "$dst" "$BACKUP/${dst#"$HOME"/}"
+    echo "backed up ${dst#"$HOME"/}"
   fi
   ln -s "$src" "$dst"
-  echo "linked    ${dst#$HOME/}"
+  changed=1
+  echo "linked    ${dst#"$HOME"/}"
 }
 
 # --- shell + tmux + editor (every host) ------------------------------------
@@ -66,6 +68,7 @@ link_one "$DIR/shared/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
 if [ -e "$HOME/.tmux.conf" ] && [ ! -L "$HOME/.tmux.conf" ]; then
   mkdir -p "$BACKUP"
   mv "$HOME/.tmux.conf" "$BACKUP/.tmux.conf"
+  changed=1
   echo "backed up .tmux.conf (was shadowing XDG tmux.conf)"
 fi
 link_one "$DIR/shared/nvim"           "$HOME/.config/nvim"
@@ -102,7 +105,7 @@ if [[ "$host" == mac ]]; then
 fi
 
 echo
-if [ -d "$BACKUP" ]; then
+if [[ "$changed" == 1 ]]; then
   echo "Replaced files saved to: $BACKUP"
 else
   echo "All links already in place — nothing to back up."

@@ -11,15 +11,116 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  checks:
+  repository:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
-      - name: Validate shell syntax
-        run: find scripts -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
+      - name: Install validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes jq lua5.4 shellcheck tmux zsh
+
+      - name: Check repository invariants
+        run: ./tests/repository-smoke.sh
+
+      - name: Validate Bash syntax
+        run: |
+          find scripts tests -type f -name '*.sh' -print0 \
+            | xargs -0 -n1 bash -n
+
+      - name: Validate Zsh syntax
+        run: |
+          zsh -n shared/bin/tmux-switch shared/zsh/*.zsh hosts/*/host.zsh hosts/mac/bin/*
+
+      - name: Run ShellCheck
+        run: shellcheck scripts/*.sh scripts/lib/*.sh tests/*.sh
+
+      - name: Validate Lua syntax
+        run: find shared/nvim -type f -name '*.lua' -print0 | xargs -0 -n1 luac -p
+
+      - name: Check Lua formatting
+        uses: JohnnyMorganz/stylua-action@479972f01e665acfcba96ada452c36608bdbbb5e # v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: 2.1.0
+          args: --check shared/nvim
+
+      - name: Validate Neovim lockfile
+        run: jq empty shared/nvim/lazy-lock.json
+
+      - name: Smoke-test linker
+        run: ./tests/link-smoke.sh
+
+      - name: Smoke-test tmux switcher
+        run: ./tests/tmux-switch-smoke.sh
+
+      - name: Validate tmux config
+        run: |
+          home="$(mktemp -d)"
+          HOME="$home" XDG_CONFIG_HOME="$home/.config" DOTFILES_DIR="$GITHUB_WORKSPACE" \
+            ./scripts/link.sh minipc >/dev/null
+          HOME="$home" tmux -L dotfiles_ci -f "$home/.config/tmux/tmux.conf" new-session -d -s ci
+          HOME="$home" tmux -L dotfiles_ci kill-server
+
+  link-platforms:
+    name: Linker (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Smoke-test all host overlays
+        run: ./tests/link-smoke.sh
+
+  neovim:
+    runs-on: ubuntu-latest
+    env:
+      NVIM_VERSION: v0.12.2
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install Neovim
+        run: |
+          curl -fsSLo /tmp/nvim.tar.gz \
+            "https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux-x86_64.tar.gz"
+          tar -xzf /tmp/nvim.tar.gz -C /tmp
+          echo "/tmp/nvim-linux-x86_64/bin" >> "$GITHUB_PATH"
+
+      - name: Load core Neovim configuration
+        env:
+          XDG_CONFIG_HOME: ${{ runner.temp }}/config
+          XDG_DATA_HOME: ${{ runner.temp }}/data
+          XDG_STATE_HOME: ${{ runner.temp }}/state
+          XDG_CACHE_HOME: ${{ runner.temp }}/cache
+        run: |
+          nvim --headless -u NONE \
+            --cmd "set runtimepath+=$GITHUB_WORKSPACE/shared/nvim" \
+            --cmd "lua require('config.options'); require('config.keymaps'); require('config.autocmds')" \
+            +qa
+
+  workflow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install actionlint
+        run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+
+      - name: Validate workflows
+        run: ~/go/bin/actionlint
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
 
       - name: Scan repository history for secrets
         uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
