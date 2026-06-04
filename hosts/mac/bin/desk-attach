@@ -1,0 +1,7 @@
+#!/bin/zsh
+# Attach (or create) ONE named tmux session on the desktop over Tailscale SSH.
+# Used by the unified switcher's "desktop:" proxy sessions, and usable directly:
+#   desk-attach claude
+export PATH="/opt/homebrew/bin:$PATH"
+session="${1:-main}"
+exec tailscale ssh desktop -t -- tmux new -A -s "$session"

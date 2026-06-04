@@ -1,0 +1,71 @@
+# Migrated from alacritty.yml on 2026-06-04 (Alacritty 0.12 YAML -> 0.17 TOML).
+# Dead keys dropped: `tabspaces`, `font.scale_with_dpi` (removed upstream);
+# `mouse.cursor.style` corrected to the proper [cursor] section.
+
+[env]
+TERM = "xterm-256color"
+
+# OSC 52: let programs (incl. a remote/nested tmux) write the macOS clipboard
+# via the escape sequence — this is the receiving end of clipboard sync from
+# the desktop. CopyPaste enables both directions over OSC 52.
+[terminal]
+osc52 = "CopyPaste"
+
+# Auto-attach the local tmux hub on launch (attach `main`, or create it).
+# `desk`/`desk -w` and the switcher's proxies use `-e ...`, which overrides
+# this, so they connect to the desktop WITHOUT a local-tmux wrapper.
+[terminal.shell]
+program = "/opt/homebrew/bin/tmux"
+args = ["new", "-A", "-s", "main"]
+
+[font]
+size = 20
+
+[font.normal]
+family = "JetBrainsMono Nerd Font"
+style = "Regular"
+
+[font.bold]
+family = "JetBrainsMono Nerd Font"
+style = "Bold"
+
+[font.italic]
+family = "JetBrainsMono Nerd Font"
+
+[cursor]
+style = "Block"
+
+[mouse]
+hide_when_typing = true
+
+[selection]
+semantic_escape_chars = """,│`|:"' ()[]{}<>"""
+
+[[mouse.bindings]]
+action = "PasteSelection"
+mouse = "Middle"
+
+[window]
+decorations = "full"
+dynamic_title = true
+opacity = 0.95
+option_as_alt = "Both"
+startup_mode = "Maximized"
+
+[window.class]
+general = "Alacritty"
+instance = "Alacritty"
+
+[window.dimensions]
+columns = 160
+lines = 80
+
+[window.padding]
+x = 4
+y = 4
+
+# Shift+Return -> send ESC + CR (carried over from the old alacritty.toml)
+[[keyboard.bindings]]
+key = "Return"
+mods = "Shift"
+chars = "\u001B\r"

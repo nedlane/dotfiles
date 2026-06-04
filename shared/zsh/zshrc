@@ -1,0 +1,62 @@
+# ~/.zshrc — managed by nedlane/dotfiles (shared/zsh/zshrc)
+# Shared across every machine. Per-machine differences live in hosts/<name>/.
+
+# --- Powerlevel10k instant prompt (keep near the top) -----------------------
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# --- which machine are we? (written by scripts/link.sh) ---------------------
+export DOTFILES_DIR="${DOTFILES_DIR:-$HOME/dotfiles}"
+export DOTFILES_HOST="$(cat "${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/host" 2>/dev/null)"
+host_dir="$DOTFILES_DIR/hosts/$DOTFILES_HOST"
+
+# --- autostart tmux on interactive login (every host except the Mac) --------
+# Land straight in a persistent "main" session whenever we open an interactive
+# shell that isn't already inside tmux. Guards skip non-interactive, nested,
+# editor, and agent shells. Done before the heavy omz/p10k init so the outer
+# shell execs into tmux immediately; the inner shells do the real work.
+if [[ "$DOTFILES_HOST" != mac ]] \
+   && command -v tmux >/dev/null 2>&1 \
+   && [[ $- == *i* ]] && [[ -z "$TMUX" ]] \
+   && [[ "$TERM_PROGRAM" != vscode && -z "$VSCODE_INJECTION" ]] \
+   && [[ -z "$INSIDE_EMACS" ]]; then
+  exec tmux new -A -s main
+fi
+
+# --- oh-my-zsh + powerlevel10k ----------------------------------------------
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="powerlevel10k/powerlevel10k"
+zstyle ':omz:update' mode reminder
+
+# Shared plugin base. The host overlay may append more (e.g. macos/brew).
+plugins=(git fzf npm python sudo tmux catppuccin_highlight zsh-syntax-highlighting)
+
+# Host overlay: extra plugins + machine env. MUST run before oh-my-zsh.sh so
+# its plugin additions and fpath entries are picked up.
+[[ -r "$host_dir/host.zsh" ]] && source "$host_dir/host.zsh"
+
+source "$ZSH/oh-my-zsh.sh"
+
+# --- shared env + aliases (after omz so ours win) ---------------------------
+source "$DOTFILES_DIR/shared/zsh/env.zsh"
+source "$DOTFILES_DIR/shared/zsh/aliases.zsh"
+
+# --- prompt ------------------------------------------------------------------
+[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
+
+# Machine identity in the prompt: the hostname shown first on the left, colored
+# by the overlay's $DOTFILES_ACCENT (a p10k color). $DOTFILES_HOST_LABEL can
+# override the displayed text; default is the real hostname (%m).
+if [[ -n "$DOTFILES_ACCENT" ]]; then
+  POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(context $POWERLEVEL9K_LEFT_PROMPT_ELEMENTS)
+  typeset -g POWERLEVEL9K_CONTEXT_DEFAULT_CONTENT_EXPANSION="${DOTFILES_HOST_LABEL:-%m}"
+  typeset -g POWERLEVEL9K_CONTEXT_{DEFAULT,SUDO}_FOREGROUND="$DOTFILES_ACCENT"
+  typeset -g POWERLEVEL9K_CONTEXT_PREFIX=''
+fi
+
+# Battery is only meaningful on laptops; a host opts in via $DOTFILES_SHOW_BATTERY
+# (set in its overlay). Appended on the right, after public IP.
+if [[ -n "$DOTFILES_SHOW_BATTERY" ]]; then
+  POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS+=(battery)
+fi

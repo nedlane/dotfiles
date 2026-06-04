@@ -1,0 +1,83 @@
+#!/usr/bin/env zsh
+# Unified tmux session switcher across the local machine + every reachable
+# Tailscale peer. Bound to `<prefix> w` in tmux (runs inside a display-popup).
+# Host-agnostic: the SAME script runs on the Mac and the WSL desktop.
+#
+#   local:   <name>  -> switch-client (same server, instant)
+#   <peer>:  <name>  -> open/attach a local "<peer>/<name>" proxy session that
+#                       SSHes into that peer's tmux session. The local (outer)
+#                       status bar is hidden for the proxy, so only the remote
+#                       machine's own status bar (colored by its host overlay)
+#                       remains visible — no stacked double bars.
+#
+# Local sessions are printed FIRST and piped straight into fzf, so they appear
+# instantly; each peer is queried in parallel and streams in as it responds, so
+# a slow or offline peer can never block the list.
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:$HOME/.local/bin:$PATH"
+setopt pipefail
+
+switch_and_prune() {
+  local target=$1
+
+  # Switch first so the proxy session being left becomes detached and can be
+  # removed immediately. The selected proxy, if any, is now attached and stays.
+  tmux switch-client -t "$target"
+  tmux list-sessions -F '#{session_attached}|#{session_name}' 2>/dev/null \
+    | while IFS='|' read -r attached session; do
+        [[ "$attached" == 0 ]] || continue
+        case "$session" in */*) tmux kill-session -t "$session" 2>/dev/null ;; esac
+      done
+}
+
+# --- build the menu, streaming into fzf -------------------------------------
+# locals: drop proxy sessions (their names contain a '/').
+choice=$(
+  {
+    tmux list-sessions -F '#S' 2>/dev/null \
+      | grep -v '/' \
+      | sed '/^$/d; s/^/local: /'
+
+    # Online peers from `tailscale status`: skip self (line 1), offline rows
+    # (status is field 5), and Windows boxes (OS is field 4 — PowerShell, no
+    # tmux). Query each in parallel; each peer's block streams in when its SSH
+    # returns. `timeout` bounds a slow/offline peer.
+    tailscale status 2>/dev/null \
+      | awk 'NR>1 && $5!="offline" && $4!="windows" {print $2}' \
+      | while read -r peer; do
+          (
+            # drop the peer's own proxy sessions (names with '/') — they're
+            # routing artifacts and would build confusing re-proxy chains.
+            timeout 6 tailscale ssh "$peer" -- 'tmux list-sessions -F "#S"' \
+              2>/dev/null | grep -v '/' | sed "/^$/d; s|^|$peer: |"
+          ) &
+        done
+    wait
+  } | fzf --prompt='session> ' \
+          --header='local = this machine   ·   others = Tailscale peers'
+) || exit 0
+[[ -z "$choice" ]] && exit 0
+
+tag=${choice%%:*}        # "local" or a peer hostname
+name=${choice#*: }       # everything after the first ": "
+
+if [[ "$tag" == "local" ]]; then
+  switch_and_prune "$name"
+  exit 0
+fi
+
+# --- remote peer: open/attach the proxy session -----------------------------
+peer=$tag
+proxy="$peer/$name"
+
+if ! tmux has-session -t "$proxy" 2>/dev/null; then
+  # Session names originate on a remote peer. Quote them before constructing
+  # the proxy shell command so a malicious name cannot inject shell syntax.
+  tmux new-session -d -s "$proxy" \
+    "exec tailscale ssh ${(q)peer} -t -- tmux new -A -s ${(q)name}"
+fi
+# Hide THIS machine's (outer) status bar for the proxy session so only the
+# remote machine's own status bar is visible — no stacked double bars. The
+# remote's bar already carries its identity color via that host's tmux overlay.
+# Idempotent, so it also applies when reattaching to an existing proxy.
+tmux set-option -t "$proxy" status off 2>/dev/null
+switch_and_prune "$proxy"

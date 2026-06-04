@@ -1,0 +1,24 @@
+# shared/git/gitconfig - public defaults shared by full-profile machines.
+# Identity and signing configuration belong in the untracked local include.
+
+[credential "https://github.com"]
+	helper =
+	helper = !gh auth git-credential
+
+[credential "https://gist.github.com"]
+	helper =
+	helper = !gh auth git-credential
+
+[init]
+	defaultBranch = main
+
+[pull]
+	ff = only
+
+# Optional tracked machine-specific overrides (missing file is ignored by Git).
+[include]
+	path = ~/.config/dotfiles/gitconfig.host
+
+# Private identity, signing keys, and machine-local settings.
+[include]
+	path = ~/.config/dotfiles/gitconfig.local

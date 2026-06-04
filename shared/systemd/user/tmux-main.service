@@ -1,0 +1,17 @@
+[Unit]
+Description=Persistent tmux "main" session
+Documentation=man:tmux(1)
+After=default.target
+
+[Service]
+# tmux daemonises its server, so the foreground process forks and exits.
+Type=forking
+ExecStart=/usr/bin/tmux new-session -d -s main
+ExecStop=/usr/bin/tmux kill-session -t main
+# Don't let stopping/restarting the unit kill the whole tmux server.
+KillMode=none
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,17 @@
+# "On the desktop" Alacritty profile (Alacritty 0.14+ / TOML).
+# Imports your normal base config unchanged, then overrides ONLY the background
+# to UQR purple (#221240) so a remote/WSL window is unmistakable. Local windows
+# keep alacritty.toml and stay default.
+#
+# Used by `desk -w` (new dedicated window):
+#   alacritty --config-file desktop.toml -e env DESK_RECOLOR=0 ~/.local/bin/desk
+# (In 0.14+ the `import` key lives under [general].)
+
+[general]
+import = ["alacritty.toml"]
+
+[colors.primary]
+background = "#221240"
+
+[window]
+title = "🖥  DESKTOP — WSL2 (tmux:main)"
