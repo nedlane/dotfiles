@@ -24,7 +24,11 @@ map("n", "n", "nzzzv")
 map("n", "N", "Nzzzv")
 
 -- Diagnostics.
-map("n", "[d", function() vim.diagnostic.jump({ count = -1 }) end, { desc = "Prev diagnostic" })
-map("n", "]d", function() vim.diagnostic.jump({ count = 1 }) end, { desc = "Next diagnostic" })
+map("n", "[d", function()
+  vim.diagnostic.jump({ count = -1 })
+end, { desc = "Prev diagnostic" })
+map("n", "]d", function()
+  vim.diagnostic.jump({ count = 1 })
+end, { desc = "Next diagnostic" })
 map("n", "<leader>dd", vim.diagnostic.open_float, { desc = "Show diagnostic (float)" })
 map("n", "<leader>dl", vim.diagnostic.setloclist, { desc = "Diagnostics -> loclist" })

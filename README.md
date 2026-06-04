@@ -136,6 +136,11 @@ The CI workflow repeats this scan on pushes and pull requests. Never place
 credentials, private keys, tokens, or application-managed state in the
 repository.
 
+CI also validates Bash and Zsh syntax, ShellCheck, Lua syntax, the Neovim
+lockfile and core configuration, tmux configuration loading, linker behavior on
+Linux and macOS, switcher pruning behavior, executable modes, and workflow
+syntax.
+
 ## License
 
 [MIT](LICENSE)

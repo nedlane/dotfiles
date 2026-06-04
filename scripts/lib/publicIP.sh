@@ -1,6 +1,8 @@
 #!/bin/bash
 
-source ~/dotfiles/scripts/shellTextVariables.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/lib/shellTextVariables.sh
+source "$SCRIPT_DIR/shellTextVariables.sh"
 
 ## Get the current external IP address
 getPublicIP () {
@@ -35,7 +37,7 @@ echo -e "${PURPLE}$PUBLICIP${NOCOLOR}"
 echo
 echo -e "${CYAN}${Undr}${OnPurple}Local IPs:${NOCOLOR}"
 for i in {0..20}; do
-    output=$(ip a show en${i} 2> /dev/null)
+	    output=$(ip a show "en${i}" 2> /dev/null)
     if echo "$output" | grep -q "status UP"; then
         echo -e "Interface en${i} - IP Addresses:"
         echo "$output" | awk '/inet / {print $2}'

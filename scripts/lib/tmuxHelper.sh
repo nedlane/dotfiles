@@ -1,8 +1,7 @@
 #!/bin/bash
+# shellcheck disable=SC2034  # Color constants are kept together for readability.
 
-script_name1=`basename $0`
-script_path1=$(dirname $(readlink -f $0))
-script_path_with_name="$script_path1/$script_name1"
+script_path_with_name="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "$0")"
 
 ############################################################
 # ----------------------------------
@@ -57,7 +56,7 @@ sessions_prompt()
 
 	tempNum=0
 	for ((i = 0; i < ${#tmux_sessions_names[@]}; i++)); do
-		tempNum=$(( $tempNum + 1 ))
+		tempNum=$((tempNum + 1))
 		name=${tmux_sessions_names[$i]}
 		date=${tmux_sessions_dates[$i]}
 		size=${tmux_sessions_sizes[$i]}
@@ -79,7 +78,7 @@ sessions_prompt()
 
 
 	echo -en "${prefix}Select: ${GREEN}"
-	read USERCHOICE
+	read -r USERCHOICE
 	echo -en "${NOCOLOR}"
 }
 
@@ -87,18 +86,18 @@ attach_session () {
 	echo -e "${prefix}${LIGHTGREEN}Attaching To Session: '${GREEN}${tmux_sessions_names[$USERCHOICE]}${LIGHTGREEN}'${NOCOLOR}"
 	echo -e "${prefix}..."
 	echo -en "${prefix}${YELLOW}"
-	tmux attach-session -t ${tmux_sessions_names[$USERCHOICE]}
+	tmux attach-session -t "${tmux_sessions_names[$USERCHOICE]}"
 }
 
 create_session () {
 	echo -e "${prefix}"
 	echo -en "${prefix}Name of New Session: ${GREEN}"
-	read sessionName
+	read -r sessionName
 	echo -en "${NOCOLOR}"
 	echo -e "${prefix}${LIGHTGREEN}Starting Session: '${GREEN}${sessionName}${LIGHTGREEN}'${NOCOLOR}"
 	echo -e "${prefix}..."
 	echo -en "${prefix}${YELLOW}"
-	tmux new-session -s ${sessionName}
+	tmux new-session -s "${sessionName}"
 	echo -en "${NOCOLOR}"
 	exit
 }
@@ -113,13 +112,12 @@ set_options () {
 kill_session () {
 	echo -e "${prefix}"
 	echo -en "${prefix}Name of Session to Delete: ${GREEN}"
-	read sessionName
+	read -r sessionName
 	echo -en "${NOCOLOR}"
 	echo -e "${prefix}${LIGHTGREEN}Deleting Session: '${GREEN}${sessionName}${LIGHTGREEN}'${NOCOLOR}"
 	echo -e "${prefix}${NOCOLOR}..."
 	echo -ne "${prefix}${YELLOW}"
-	tmux kill-session -t ${sessionName}
-	if [[ $? -eq 0 ]]; then
+	if tmux kill-session -t "${sessionName}"; then
 		echo -en "\033[2K\r"      # Clear current line (no error message to display)
 	fi
 	sleep 2
@@ -131,7 +129,7 @@ while true; do
 	sessions_prompt
 
 	case $USERCHOICE in
-		x | X | q | Q | e | e | exit)
+		x | X | q | Q | e | E | exit)
 			echo -e "${prefix}Exiting..."
 			exit
 			;;
@@ -141,13 +139,13 @@ while true; do
 		d | D)
 			kill_session
 			;;
-		d | D)
+		o | O)
 			set_options
 			;;
 		r | R)
 			echo -e "${prefix}${PURPLE}Relaunching Script${NOCOLOR}"
 			echo -e "${prefix}"
-			script_path_with_name && exit
+			"$script_path_with_name"
 			exit
 			;;
 		[0-9]* )
@@ -156,16 +154,15 @@ while true; do
 				echo -e "${prefix}${ORANGE}Please select a valid choice${NOCOLOR}"
 				sleep .75
 				# Prevent spamming terminal with too much useless shit (AKA go back and clear
-				lines=$(( ${#tmux_sessions_names[@]} ))
-				lines=$(( ${lines} + 10 ))
-				for i in $( eval echo {1..$lines} ); do
+				lines=$((${#tmux_sessions_names[@]} + 10))
+				for ((i = 0; i < lines; i++)); do
 					echo -en "\033[K"       # Clear text to end of line
 					echo -en "\033[1A"      # Move cursor position up 1 row
 				done
 				echo
 				continue
 			fi
-			USERCHOICE=$(( $USERCHOICE - 1 ))
+			USERCHOICE=$((USERCHOICE - 1))
 			break
 			;;
 		* )
@@ -173,9 +170,8 @@ while true; do
 			echo -e "${prefix}${ORANGE}Please select a valid choice${NOCOLOR}"
 			sleep .75
 			# Prevent spamming terminal with too much useless shit
-			lines=$(( ${#tmux_sessions[@]} ))
-			lines=$(( ${lines} + 10 ))
-			for i in $( eval echo {1..$lines} ); do
+			lines=$((${#tmux_sessions_names[@]} + 10))
+			for ((i = 0; i < lines; i++)); do
 				echo -en "\033[K"       # Clear text to end of line
 				echo -en "\033[1A"      # Move cursor position up 1 row
 			done
@@ -188,4 +184,3 @@ done
 attach_session
 
 exit
-kill -9 $PPID

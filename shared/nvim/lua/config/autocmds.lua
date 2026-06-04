@@ -4,7 +4,9 @@ local aug = vim.api.nvim_create_augroup("UserCore", { clear = true })
 -- Briefly highlight yanked text.
 vim.api.nvim_create_autocmd("TextYankPost", {
   group = aug,
-  callback = function() vim.highlight.on_yank() end,
+  callback = function()
+    vim.highlight.on_yank()
+  end,
 })
 
 -- Trim trailing whitespace on save (skip filetypes where it can matter).
