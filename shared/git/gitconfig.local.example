@@ -1,0 +1,13 @@
+[user]
+	name = Your Name
+	email = you@example.com
+	signingkey = ~/.ssh/id_ed25519_signing.pub
+
+[gpg]
+	format = ssh
+
+[commit]
+	gpgsign = true
+
+[tag]
+	gpgSign = true

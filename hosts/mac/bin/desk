@@ -1,0 +1,15 @@
+#!/bin/zsh
+# "desk" — connect to the desktop's tmux `main` over Tailscale SSH.
+#
+# By default it also paints the CURRENT window UQR purple via OSC escape codes
+# (OSC 11 set / OSC 111 reset) and reverts on exit — so it works in any window
+# with no extra config. Set DESK_RECOLOR=0 to skip the OSC recolor; `desk -w`
+# does that because its dedicated window already gets purple from desktop.toml.
+if [[ "$DESK_RECOLOR" != "0" ]]; then
+  printf '\033]11;#221240\007'                  # set background -> #221240
+  trap 'printf "\033]111\007"' EXIT INT TERM    # reset background on the way out
+fi
+
+# tmux new -A -s main = attach-or-create. `desktop` resolves via MagicDNS;
+# `-t --` forces a remote PTY and separates ssh flags from the remote command.
+tailscale ssh desktop -t -- tmux new -A -s main

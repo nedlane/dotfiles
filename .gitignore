@@ -1,0 +1,27 @@
+# ---------------------------------------------------------------------------
+# dotfiles .gitignore
+# Principle: track ONLY hand-written config. Everything third-party or
+# app-managed (or machine-local) stays local and is ignored here.
+# ---------------------------------------------------------------------------
+
+# macOS / editor junk
+.DS_Store
+*.swp
+*~
+
+# Never stage home-directory state accidentally. Hand-written config belongs
+# under shared/ or hosts/ instead of being copied into these root-level paths.
+/.config/
+/.gitconfig
+/.ssh/
+/.zshrc*
+
+# Local backups / migration leftovers (created when editing configs in place)
+*.bak
+*.bak-*
+*.old
+*.migrated
+
+# Third-party / self-managing tool state
+.oh-my-zsh/
+.tmux/
