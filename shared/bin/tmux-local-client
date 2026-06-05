@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+# tmux-local-client — exit 0 if the tmux client with the given PID is attached
+# LOCALLY, exit 1 if it is attached over SSH (i.e. a nested/remote session).
+#
+# Used to gate `prefix w` (the unified session switcher) so it only fires at the
+# physical machine you're sitting at. When you connect from the Mac into the
+# desktop or a homelab box (or vice versa), that inner tmux's client runs under
+# sshd and so carries SSH_CONNECTION in its environment — we detect that and
+# refuse, which stops you re-launching the switcher and nesting tmux through
+# tmux through tmux.
+#
+# Fails OPEN: if the PID is missing or its environment can't be read, we treat
+# the client as local so the switcher keeps working.
+pid=$1
+[ -n "$pid" ] || exit 0
+
+# SSH_CONNECTION is the canonical marker of an active inbound SSH session and is
+# exactly what `tailscale ssh` sets when the switcher attaches into a peer. We
+# deliberately do NOT key on SSH_TTY / SSH_CLIENT / SSH_AUTH_SOCK: the agent
+# socket is present even on a purely local macOS login and would false-positive.
+if [ -r "/proc/$pid/environ" ]; then          # Linux (desktop, homelab)
+  grep -qz 'SSH_CONNECTION=.' "/proc/$pid/environ" && exit 1
+  exit 0
+fi
+
+# macOS / BSD: `ps -E` prints the process environment alongside the command.
+if ps -Eww -p "$pid" 2>/dev/null | grep -q 'SSH_CONNECTION=[^ ]'; then
+  exit 1
+fi
+exit 0
