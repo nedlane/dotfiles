@@ -36,7 +36,14 @@ jobs:
           zsh -n shared/bin/tmux-switch shared/zsh/*.zsh hosts/*/host.zsh hosts/mac/bin/*
 
       - name: Run ShellCheck
-        run: shellcheck scripts/*.sh scripts/lib/*.sh tests/*.sh
+        run: |
+          shellcheck scripts/*.sh scripts/lib/*.sh tests/*.sh
+          # shared/bin mixes zsh (tmux-switch) and POSIX-sh tools; shellcheck
+          # can't parse zsh, so lint only the non-zsh ones — this covers any
+          # future sh/bash tool dropped in here automatically.
+          for f in shared/bin/*; do
+            head -1 "$f" | grep -q zsh || shellcheck "$f"
+          done
 
       - name: Validate Lua syntax
         run: find shared/nvim -type f -name '*.lua' -print0 | xargs -0 -n1 luac -p
@@ -56,6 +63,9 @@ jobs:
 
       - name: Smoke-test tmux switcher
         run: ./tests/tmux-switch-smoke.sh
+
+      - name: Smoke-test tmux-local-client guard
+        run: ./tests/tmux-local-client-smoke.sh
 
       - name: Validate tmux config
         run: |
