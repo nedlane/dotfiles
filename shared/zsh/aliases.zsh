@@ -16,4 +16,4 @@ alias p3="python3"
 alias texpdf="latexmk -pdf"
 
 # Claude Code.
-alias cl='claude'
+alias cl='claude --dangerously-skip-permissions --remote-control'
