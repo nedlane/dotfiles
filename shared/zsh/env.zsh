@@ -24,6 +24,24 @@ export NVM_DIR="$HOME/.nvm"
 # luarocks
 [[ -d "$HOME/.luarocks/bin" ]] && export PATH="$HOME/.luarocks/bin:$PATH"
 
+# WSL: re-add the Windows interop dirs to PATH. WSL normally appends these, but
+# with systemd=true this distro inherits the static /etc/environment PATH and
+# the append never lands, so explorer.exe & co. go missing. We add them back,
+# appended (so Linux tools still win). Guarded to WSL — this file is shared with
+# non-WSL machines. `typeset -U path` dedupes, keeping it idempotent and cheap.
+if [[ -r /proc/version ]] && grep -qi microsoft /proc/version; then
+  typeset -U path
+  for _win in /mnt/c/Windows /mnt/c/Windows/System32; do
+    [[ -d "$_win" ]] && path+=("$_win")
+  done
+  unset _win
+
+  # Open a path (default: cwd) in Windows Explorer. explorer.exe returns
+  # non-zero even on success, so swallow it.
+  explorer() { /mnt/c/Windows/explorer.exe "${1:-.}"; return 0; }
+  alias open=explorer
+fi
+
 # zoxide
 if command -v zoxide >/dev/null; then
   eval "$(zoxide init zsh)"
