@@ -3,6 +3,8 @@
 # (C-Space) or the desktop (C-a).
 set -g prefix C-b
 bind C-b send-prefix
-set -g status-left-length 40
-set -g status-left "#[bg=#94e2d5,fg=#11111b,bold]  #h #[bg=default,fg=#94e2d5,nobold] #S #[default]"
+
+# Device identity consumed by the shared status bar (catppuccin teal).
+set -g @host_accent "#94e2d5"
+set -g @host_label " minipc2"
 set -g pane-active-border-style "fg=#94e2d5"
