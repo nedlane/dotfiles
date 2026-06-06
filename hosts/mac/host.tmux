@@ -1,13 +1,13 @@
-# hosts/mac/host.tmux — sourced after catppuccin, so it wins.
+# hosts/mac/host.tmux — sourced after the shared status bar, so it wins.
 # Blue = "this is the laptop". Prefix stays C-Space.
 
 unbind C-b
 set -g prefix C-Space
 bind C-Space send-prefix
 
-# machine badge + accent (catppuccin blue); badge shows the hostname
-set -g status-left-length 40
-set -g status-left "#[bg=#89b4fa,fg=#11111b,bold]  #h #[bg=default,fg=#89b4fa,nobold] #S #[default]"
+# Device identity consumed by the shared status bar (catppuccin blue).
+set -g @host_accent "#89b4fa"
+set -g @host_label " mac"
 set -g pane-active-border-style "fg=#89b4fa"
 
 # --- Tailscale desktop access (laptop is a client of the always-on WSL box) ---
