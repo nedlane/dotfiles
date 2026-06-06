@@ -67,6 +67,9 @@ jobs:
       - name: Smoke-test tmux-local-client guard
         run: ./tests/tmux-local-client-smoke.sh
 
+      - name: Smoke-test cl wrapper
+        run: ./tests/cl-wrapper-smoke.sh
+
       - name: Validate tmux config
         run: |
           home="$(mktemp -d)"
