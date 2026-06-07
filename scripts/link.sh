@@ -82,8 +82,21 @@ generate_claude_md() {
   local overlay="$DIR/hosts/$host/claude/CLAUDE.md"
   [ -e "$shared" ] || { echo "skip (no source): shared/claude/CLAUDE.md"; return; }
   mkdir -p "$(dirname "$dst")"
+
+  # Build expected content into a temp file
+  local tmp; tmp="$(mktemp)"
+  cat "$shared" > "$tmp"
+  [ -e "$overlay" ] && { printf '\n' >> "$tmp"; cat "$overlay" >> "$tmp"; }
+
+  # Already up-to-date real file — nothing to do
+  if [ -f "$dst" ] && [ ! -L "$dst" ] && diff -q "$tmp" "$dst" >/dev/null 2>&1; then
+    echo "ok        .claude/CLAUDE.md"
+    rm "$tmp"
+    return
+  fi
+
+  # Back up any real file before overwriting
   if [ -e "$dst" ] && [ ! -L "$dst" ]; then
-    # Back up any real file before overwriting
     local bak="${BACKUP}/.claude/CLAUDE.md"
     mkdir -p "$(dirname "$bak")"
     cp "$dst" "$bak"
@@ -91,10 +104,8 @@ generate_claude_md() {
   fi
   # Remove symlink (from a prior link_one run) so we write a real file
   [ -L "$dst" ] && rm "$dst"
-  cat "$shared" > "$dst"
+  mv "$tmp" "$dst"
   if [ -e "$overlay" ]; then
-    printf '\n' >> "$dst"
-    cat "$overlay" >> "$dst"
     echo "generated .claude/CLAUDE.md (shared + $host overlay)"
   else
     echo "generated .claude/CLAUDE.md (shared only)"
