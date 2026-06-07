@@ -73,6 +73,36 @@ if [ -e "$HOME/.tmux.conf" ] && [ ! -L "$HOME/.tmux.conf" ]; then
 fi
 link_one "$DIR/shared/nvim"           "$HOME/.config/nvim"
 
+# --- claude instructions (shared + optional host overlay) ------------------
+# ~/.claude/CLAUDE.md is generated (not symlinked) so host-specific sections
+# can be appended cleanly. Re-running link.sh regenerates it from source.
+generate_claude_md() {
+  local dst="$HOME/.claude/CLAUDE.md"
+  local shared="$DIR/shared/claude/CLAUDE.md"
+  local overlay="$DIR/hosts/$host/claude/CLAUDE.md"
+  [ -e "$shared" ] || { echo "skip (no source): shared/claude/CLAUDE.md"; return; }
+  mkdir -p "$(dirname "$dst")"
+  if [ -e "$dst" ] && [ ! -L "$dst" ]; then
+    # Back up any real file before overwriting
+    local bak="${BACKUP}/.claude/CLAUDE.md"
+    mkdir -p "$(dirname "$bak")"
+    cp "$dst" "$bak"
+    echo "backed up .claude/CLAUDE.md"
+  fi
+  # Remove symlink (from a prior link_one run) so we write a real file
+  [ -L "$dst" ] && rm "$dst"
+  cat "$shared" > "$dst"
+  if [ -e "$overlay" ]; then
+    printf '\n' >> "$dst"
+    cat "$overlay" >> "$dst"
+    echo "generated .claude/CLAUDE.md (shared + $host overlay)"
+  else
+    echo "generated .claude/CLAUDE.md (shared only)"
+  fi
+  changed=1
+}
+generate_claude_md
+
 # --- git (full profile only) -----------------------------------------------
 # The shared gitconfig turns on SSH commit signing with a key the homelab
 # boxes don't have; linking it there would break their commits.
