@@ -18,3 +18,4 @@ alias eufs="LIBGL_ALWAYS_SOFTWARE=1 ros2 launch eufs_launcher eufs_launcher.laun
 # --- machine identity (consumed by shared/zsh/zshrc) ---
 # Purple accent; prompt shows the real hostname.
 export DOTFILES_ACCENT=141
+export DOTFILES_ACCENT_HEX="#cba6f7"

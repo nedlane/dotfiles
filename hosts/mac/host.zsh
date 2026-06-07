@@ -37,5 +37,6 @@ desk() {
 # --- machine identity (consumed by shared/zsh/zshrc) ---
 # blue accent; prompt shows the actual hostname (%m)
 export DOTFILES_ACCENT=111
+export DOTFILES_ACCENT_HEX="#89b4fa"
 # laptop: show the battery segment on the right (only the Mac opts in)
 export DOTFILES_SHOW_BATTERY=1

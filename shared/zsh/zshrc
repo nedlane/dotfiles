@@ -55,6 +55,14 @@ if [[ -n "$DOTFILES_ACCENT" ]]; then
   typeset -g POWERLEVEL9K_CONTEXT_PREFIX=''
 fi
 
+# Apply host accent color to p10k segments if a hex color is defined
+if [[ -n "$DOTFILES_ACCENT_HEX" ]]; then
+  # Directory background uses the host accent color
+  typeset -g POWERLEVEL9K_DIR_BACKGROUND="$DOTFILES_ACCENT_HEX"
+  # Time segment background also uses the accent color for visual consistency
+  typeset -g POWERLEVEL9K_TIME_BACKGROUND="$DOTFILES_ACCENT_HEX"
+fi
+
 # Battery is only meaningful on laptops; a host opts in via $DOTFILES_SHOW_BATTERY
 # (set in its overlay). Appended on the right, after public IP.
 if [[ -n "$DOTFILES_SHOW_BATTERY" ]]; then
