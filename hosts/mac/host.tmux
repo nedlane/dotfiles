@@ -5,6 +5,10 @@ unbind C-b
 set -g prefix C-Space
 bind C-Space send-prefix
 
+# Homebrew zsh — must be explicit since tmux freezes $SHELL at server-start time.
+set -g default-shell /opt/homebrew/bin/zsh
+set -g default-command /opt/homebrew/bin/zsh
+
 # Device identity consumed by the shared status bar (catppuccin blue).
 set -g @host_accent "#89b4fa"
 set -g @host_label " mac"

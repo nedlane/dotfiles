@@ -30,7 +30,7 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 zstyle ':omz:update' mode reminder
 
 # Shared plugin base. The host overlay may append more (e.g. macos/brew).
-plugins=(git fzf npm python sudo tmux catppuccin_highlight zsh-syntax-highlighting)
+plugins=(git fzf npm python sudo catppuccin_highlight zsh-syntax-highlighting)
 
 # Host overlay: extra plugins + machine env. MUST run before oh-my-zsh.sh so
 # its plugin additions and fpath entries are picked up.
