@@ -36,10 +36,11 @@ run() {
 }
 
 # Default launch: always-on remote control with a "<host> / <dir>" title.
+# The wsl-desktop host maps to the curated device name "desktop".
 out="$(run wsl-desktop dotfiles)"
 grep -qF -- '--dangerously-skip-permissions' <<<"$out" || fail "missing --dangerously-skip-permissions: $out"
 grep -qF -- '--remote-control' <<<"$out" || fail "missing --remote-control: $out"
-grep -qF -- '--name wsl-desktop / dotfiles' <<<"$out" || fail "missing device/folder title: $out"
+grep -qF -- '--name desktop / dotfiles' <<<"$out" || fail "missing device/folder title: $out"
 
 # Extra args pass through and the title reflects host + directory.
 out="$(run minipc myproj --model opus)"
@@ -49,7 +50,7 @@ grep -qF -- '--model opus' <<<"$out" || fail "passthrough arg dropped: $out"
 # An explicit --name from the caller wins; no injected title.
 out="$(run wsl-desktop dotfiles --name custom)"
 grep -qF -- '--name custom' <<<"$out" || fail "explicit --name dropped: $out"
-if grep -qF -- 'wsl-desktop /' <<<"$out"; then
+if grep -qF -- 'desktop /' <<<"$out"; then
   fail "injected title despite explicit --name: $out"
 fi
 

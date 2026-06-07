@@ -7,6 +7,14 @@ plugins+=(macos brew battery)
 export PATH="/opt/X11/bin:$PATH"
 export OPENSSL_ROOT_DIR=/opt/homebrew/opt/openssl@3
 
+# GNU coreutils first on PATH: gives GNU realpath/ls/date/… so CLI behaviour
+# matches the Linux hosts, and satisfies tmux-autoreload's `realpath -e` (BSD
+# realpath rejects -e, which otherwise aborts the plugin → tpm errors). Guarded
+# so it's a no-op when coreutils isn't installed (`brew install coreutils`).
+if [[ -d /opt/homebrew/opt/coreutils/libexec/gnubin ]]; then
+  export PATH="/opt/homebrew/opt/coreutils/libexec/gnubin:$PATH"
+fi
+
 # Docker Desktop CLI completions
 fpath=("$HOME/.docker/completions" $fpath)
 
