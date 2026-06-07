@@ -19,11 +19,20 @@ alias texpdf="latexmk -pdf"
 # "<host> / <dir>", so every device is identifiable in the claude.ai/code and
 # mobile session list. The explicit --name skips Claude's auto-generated title,
 # which otherwise reflects only the last message and hides which machine a
-# session runs on. $DOTFILES_HOST is the curated device name (falls back to the
-# short hostname); ${PWD:t} is the current directory's basename. An explicit
-# --name/-n from the caller wins.
+# session runs on. The host prefix is forced to a curated device name
+# (mac/desktop/minipc/minipc2/pi) so it reads cleanly in the session list,
+# regardless of the box's actual hostname; ${PWD:t} is the current directory's
+# basename. An explicit --name/-n from the caller wins.
 cl() {
-  local host="${DOTFILES_HOST:-$(hostname -s 2>/dev/null || hostname)}"
+  local host
+  case "${DOTFILES_HOST:-}" in
+    mac)         host=mac ;;
+    wsl-desktop) host=desktop ;;
+    minipc)      host=minipc ;;
+    minipc2)     host=minipc2 ;;
+    pi)          host=pi ;;
+    *)           host="${DOTFILES_HOST:-$(hostname -s 2>/dev/null || hostname)}" ;;
+  esac
   local title="${host:+$host / }${PWD:t}"
   local arg
   for arg in "$@"; do
