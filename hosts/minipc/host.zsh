@@ -6,3 +6,4 @@ plugins+=(brew globalias)
 # --- machine identity (consumed by shared/zsh/zshrc) ---
 # green accent (matches the tmux switcher color); prompt shows the hostname.
 export DOTFILES_ACCENT=150
+export DOTFILES_ACCENT_HEX="#a6e3a1"
