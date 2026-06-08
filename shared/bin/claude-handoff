@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+# Hand off the current project to a remote host for autonomous Claude processing.
+#
+# Usage:
+#   claude-handoff                        # no task note, just context
+#   claude-handoff "finish the auth work" # include a task description
+#   HANDOFF_HOST=minipc claude-handoff    # override destination
+#
+# On the remote, opens (or reuses) a tmux session named 'handoff' with a
+# window per project. Attach with: ssh <host> -t tmux attach -t handoff
+
+set -euo pipefail
+
+DESKTOP_HOST="${HANDOFF_HOST:-wsl-desktop}"
+PROJECT_DIR="$(pwd)"
+PROJECT_NAME="$(basename "$PROJECT_DIR")"
+TASK_NOTE="${1:-}"
+
+# ---------------------------------------------------------------------------
+# git state
+# ---------------------------------------------------------------------------
+GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "(not a git repo)")"
+GIT_STATUS="$(git status --short 2>/dev/null | head -20 || echo "")"
+GIT_LOG="$(git log --oneline -8 2>/dev/null || echo "")"
+
+# ---------------------------------------------------------------------------
+# transcript extraction
+# Claude encodes project paths by replacing every / with -
+# ---------------------------------------------------------------------------
+CLAUDE_KEY="${PROJECT_DIR//\//-}"
+TRANSCRIPT_DIR="$HOME/.claude/projects/$CLAUDE_KEY"
+MSG_COUNT=0
+
+extract_transcript() {
+  [[ -d "$TRANSCRIPT_DIR" ]] || return 0
+  local recent
+  recent="$(ls -t "$TRANSCRIPT_DIR"/*.jsonl 2>/dev/null | head -1)" || return 0
+  [[ -n "$recent" ]] || return 0
+
+  python3 - "$recent" <<'PY'
+import json, sys
+
+path = sys.argv[1]
+messages = []
+for line in open(path):
+    try:
+        m = json.loads(line)
+        mtype = m.get("type")
+        if mtype == "user":
+            content = m.get("message", {}).get("content", "")
+            if isinstance(content, str) and content.strip():
+                messages.append(("USER", content.strip()))
+        elif mtype == "assistant":
+            blocks = m.get("message", {}).get("content", [])
+            parts = [b["text"] for b in blocks if b.get("type") == "text" and b.get("text", "").strip()]
+            if parts:
+                messages.append(("ASSISTANT", " ".join(parts)))
+    except Exception:
+        pass
+
+tail = messages[-40:]  # last ~20 exchanges
+for role, text in tail:
+    truncated = text[:700] + (" [...]" if len(text) > 700 else "")
+    print(f"**{role}**: {truncated}")
+    print()
+PY
+}
+
+TRANSCRIPT="$(extract_transcript)"
+MSG_COUNT="$(echo "$TRANSCRIPT" | grep -c '^\*\*' 2>/dev/null || echo 0)"
+
+# ---------------------------------------------------------------------------
+# build handoff document
+# ---------------------------------------------------------------------------
+HANDOFF_FILE="/tmp/claude-handoff-${PROJECT_NAME}.md"
+{
+  echo "# Handoff from $(hostname)"
+  echo ""
+  echo "## Project"
+  echo "- **Path**: \`$PROJECT_DIR\`"
+  echo "- **Branch**: \`$GIT_BRANCH\`"
+  if [[ -n "$GIT_STATUS" ]]; then
+    echo "- **Working tree**:"
+    printf '```\n%s\n```\n' "$GIT_STATUS"
+  else
+    echo "- **Working tree**: clean"
+  fi
+  echo ""
+  echo "## Recent commits"
+  printf '```\n%s\n```\n' "$GIT_LOG"
+  echo ""
+  if [[ -n "$TASK_NOTE" ]]; then
+    echo "## Task"
+    echo "$TASK_NOTE"
+    echo ""
+  fi
+  if [[ -n "$TRANSCRIPT" ]]; then
+    echo "## Recent conversation"
+    echo "$TRANSCRIPT"
+  fi
+  echo "---"
+  echo ""
+  echo "You've been handed off from another machine to continue this work autonomously."
+  if [[ -n "$TASK_NOTE" ]]; then
+    echo "The requested task is described above. Proceed with it now."
+  else
+    echo "Review the context above and continue from where the session left off."
+  fi
+  echo "Run tests when appropriate. If the task is large, commit progress to a branch."
+} > "$HANDOFF_FILE"
+
+# ---------------------------------------------------------------------------
+# connect and verify desktop
+# ---------------------------------------------------------------------------
+echo "Handing off $PROJECT_NAME → $DESKTOP_HOST..."
+if ! ssh -o ConnectTimeout=8 -o BatchMode=yes "$DESKTOP_HOST" true 2>/dev/null; then
+  echo "error: cannot reach $DESKTOP_HOST" >&2
+  exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# sync handoff doc
+# ---------------------------------------------------------------------------
+REMOTE_HANDOFF="/tmp/claude-handoff-${PROJECT_NAME}.md"
+rsync -q "$HANDOFF_FILE" "$DESKTOP_HOST:$REMOTE_HANDOFF"
+
+# ---------------------------------------------------------------------------
+# ensure project is current on desktop
+# ---------------------------------------------------------------------------
+PULL_MSG="$(ssh "$DESKTOP_HOST" bash <<REMOTE
+  if [[ -d '$PROJECT_DIR/.git' ]]; then
+    cd '$PROJECT_DIR' && git pull --ff-only 2>&1 | tail -1
+  else
+    echo "warn: $PROJECT_DIR not found on $DESKTOP_HOST"
+  fi
+REMOTE
+)"
+echo "  git: ${PULL_MSG:-already up to date}"
+
+# ---------------------------------------------------------------------------
+# write launcher script on desktop (avoids quoting hell through SSH)
+# ---------------------------------------------------------------------------
+LAUNCHER="/tmp/claude-handoff-launch-${PROJECT_NAME}.sh"
+ssh "$DESKTOP_HOST" "cat > '$LAUNCHER' && chmod +x '$LAUNCHER'" <<LAUNCHER
+#!/usr/bin/env bash
+set -e
+cd '$PROJECT_DIR' 2>/dev/null || { echo "error: $PROJECT_DIR not found on $DESKTOP_HOST"; read -r; exit 1; }
+exec claude "\$(cat '$REMOTE_HANDOFF')"
+LAUNCHER
+
+# ---------------------------------------------------------------------------
+# launch in tmux on desktop
+# ---------------------------------------------------------------------------
+WIN="$PROJECT_NAME"
+ssh "$DESKTOP_HOST" bash <<REMOTE
+  # create handoff session if it doesn't exist
+  tmux new-session -d -s handoff 2>/dev/null || true
+  # kill an existing window with this name so we get a fresh start
+  tmux kill-window -t "handoff:$WIN" 2>/dev/null || true
+  # open new window running the launcher
+  tmux new-window -t handoff -n '$WIN' '$LAUNCHER'
+REMOTE
+
+# ---------------------------------------------------------------------------
+# report
+# ---------------------------------------------------------------------------
+echo "  ✓ context: ${MSG_COUNT} transcript messages"
+echo "  ✓ synced to $DESKTOP_HOST:$REMOTE_HANDOFF"
+echo "  ✓ tmux window: handoff/$WIN"
+echo ""
+echo "Check in:  ssh $DESKTOP_HOST -t tmux attach -t handoff"
