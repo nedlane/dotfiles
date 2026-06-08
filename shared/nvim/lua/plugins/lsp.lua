@@ -26,9 +26,6 @@ return {
           map("K", vim.lsp.buf.hover, "Hover docs")
           map("<leader>rn", vim.lsp.buf.rename, "Rename symbol")
           map("<leader>ca", vim.lsp.buf.code_action, "Code action")
-          map("<leader>f", function()
-            vim.lsp.buf.format({ async = true })
-          end, "Format buffer")
         end,
       })
 
@@ -43,14 +40,14 @@ return {
 
       -- General servers installed/managed by Mason.
       require("mason-lspconfig").setup({
-        ensure_installed = { "lua_ls", "rust_analyzer" },
+        ensure_installed = { "lua_ls", "rust_analyzer", "bashls", "marksman" },
       })
 
       vim.lsp.config("*", { capabilities = capabilities })
       vim.lsp.config("lua_ls", {
         settings = { Lua = { diagnostics = { globals = { "vim" } } } },
       })
-      vim.lsp.enable({ "lua_ls", "rust_analyzer" })
+      vim.lsp.enable({ "lua_ls", "rust_analyzer", "bashls", "marksman" })
     end,
   },
 }
