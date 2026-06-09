@@ -10,6 +10,12 @@ fi
 
 export GPG_TTY=$(tty)
 
+# Claude Code: trigger auto-compact at 50% of the context window instead of the
+# default ~95%. On a 1M-token model (Opus 4.8, Sonnet 4.6) that's a ~500K
+# trigger — keeps sessions well clear of the late-window quality cliff. Read
+# once at session startup; not re-evaluated on a mid-session /model switch.
+export CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50
+
 # ~/bin, ~/.local/bin and cargo
 [[ -d "$HOME/bin" ]] && export PATH="$HOME/bin:$PATH"
 [[ -d "$HOME/.local/bin" ]] && export PATH="$HOME/.local/bin:$PATH"
