@@ -13,14 +13,6 @@ require("config.options")
 require("config.keymaps")
 require("config.autocmds")
 
--- vim.treesitter.language.ft_to_lang was removed in Neovim 0.11; shim it for
--- any plugin that still calls it.
-if not vim.treesitter.language.ft_to_lang then
-  vim.treesitter.language.ft_to_lang = function(ft)
-    return vim.treesitter.language.get_lang(ft) or ft
-  end
-end
-
 -- Bootstrap lazy.nvim (clones it on first run) then load lua/plugins/*.
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
