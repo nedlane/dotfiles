@@ -16,6 +16,13 @@ return {
       { "<leader>fr", "<cmd>Telescope lsp_references<CR>", desc = "References" },
       { "<leader>fs", "<cmd>Telescope lsp_document_symbols<CR>", desc = "Doc symbols" },
     },
-    opts = {},
+    opts = {
+      defaults = {
+        -- nvim-treesitter rewrite (main branch) dropped the old parsers/configs
+        -- API that Telescope 0.1.x uses in treesitter_attach; disable treesitter
+        -- highlighting in the previewer so it falls back to vim regex syntax.
+        preview = { treesitter = false },
+      },
+    },
   },
 }

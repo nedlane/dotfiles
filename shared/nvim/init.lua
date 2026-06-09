@@ -13,7 +13,8 @@ require("config.options")
 require("config.keymaps")
 require("config.autocmds")
 
--- Telescope 0.1.x calls ft_to_lang which was removed in Neovim 0.11.
+-- vim.treesitter.language.ft_to_lang was removed in Neovim 0.11; shim it for
+-- any plugin that still calls it.
 if not vim.treesitter.language.ft_to_lang then
   vim.treesitter.language.ft_to_lang = function(ft)
     return vim.treesitter.language.get_lang(ft) or ft
