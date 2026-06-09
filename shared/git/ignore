@@ -1,0 +1,26 @@
+# Global Git ignore — applies to every repo on this machine. Git auto-reads
+# $XDG_CONFIG_HOME/git/ignore (~/.config/git/ignore). Keep this to noise that is
+# never part of a project; project-specific patterns belong in that repo's
+# own .gitignore.
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Editor / tooling scratch
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Direnv local overrides
+.envrc.local

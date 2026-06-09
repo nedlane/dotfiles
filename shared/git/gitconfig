@@ -15,6 +15,39 @@
 [pull]
 	ff = only
 
+[push]
+	# `git push` on a fresh branch sets up its upstream automatically.
+	autoSetupRemote = true
+
+[fetch]
+	# Drop local remote-tracking refs for branches deleted upstream.
+	prune = true
+
+[rebase]
+	autoStash = true
+
+[merge]
+	# zdiff3 shows the common ancestor in conflicts (clearer than the default).
+	conflictStyle = zdiff3
+
+[diff]
+	algorithm = histogram
+	colorMoved = default
+
+[rerere]
+	# Remember and replay conflict resolutions.
+	enabled = true
+
+[branch]
+	# Most-recently-committed branches first in `git branch`.
+	sort = -committerdate
+
+[column]
+	ui = auto
+
+# Global ignore. Git auto-reads $XDG_CONFIG_HOME/git/ignore (~/.config/git/ignore
+# by default); scripts/link.sh symlinks shared/git/ignore there on every host.
+
 # Optional tracked machine-specific overrides (missing file is ignored by Git).
 [include]
 	path = ~/.config/dotfiles/gitconfig.host

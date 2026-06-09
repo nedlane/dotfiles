@@ -72,6 +72,9 @@ if [ -e "$HOME/.tmux.conf" ] && [ ! -L "$HOME/.tmux.conf" ]; then
   echo "backed up .tmux.conf (was shadowing XDG tmux.conf)"
 fi
 link_one "$DIR/shared/nvim"           "$HOME/.config/nvim"
+# Global Git ignore — Git auto-reads this XDG path regardless of profile, so
+# even minimal hosts (which skip the shared gitconfig) get the ignore rules.
+link_one "$DIR/shared/git/ignore"     "${XDG_CONFIG_HOME:-$HOME/.config}/git/ignore"
 
 # --- claude instructions (shared + optional host overlay) ------------------
 # ~/.claude/CLAUDE.md is generated (not symlinked) so host-specific sections
