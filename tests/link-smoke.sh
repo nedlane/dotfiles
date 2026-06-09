@@ -30,6 +30,7 @@ for host in "${hosts[@]}"; do
   assert_link "$home/.p10k.zsh" "$ROOT/shared/p10k.zsh"
   assert_link "$home/.config/tmux/tmux.conf" "$ROOT/shared/tmux/tmux.conf"
   assert_link "$home/.config/nvim" "$ROOT/shared/nvim"
+  assert_link "$home/.config/git/ignore" "$ROOT/shared/git/ignore"
   assert_link "$home/.config/dotfiles/host.tmux" "$ROOT/hosts/$host/host.tmux"
   assert_link "$home/.local/bin/tmux-switch" "$ROOT/shared/bin/tmux-switch"
   [[ "$(cat "$home/.config/dotfiles/host")" == "$host" ]] || fail "recorded host does not match $host"
