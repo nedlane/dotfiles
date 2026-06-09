@@ -14,6 +14,9 @@ alias th="${DOTFILES_DIR:-$HOME/dotfiles}/scripts/lib/tmuxHelper.sh"
 # misc
 alias p3="python3"
 alias texpdf="latexmk -pdf"
+# Prefer the Compose v2 subcommand everywhere, even where a legacy
+# docker-compose shim is muscle-memory.
+alias docker-compose="docker compose"
 
 # Claude Code: launch an always-on remote-control session whose title is
 # "<host> / <dir>", so every device is identifiable in the claude.ai/code and
