@@ -74,7 +74,7 @@ setup_mac() {
   local -a formulae=(
     bash curl docker docker-completion docker-compose fd ffmpeg fmt fzf gh
     iproute2mac lua luarocks magic-wormhole neofetch neovim node php python
-    rust scipy texlive tmux tree-sitter watchman wget yarn zsh
+    ripgrep rust scipy texlive tmux tree-sitter watchman wget yarn zsh
   )
   echo "== Homebrew packages =="
   for formula in "${formulae[@]}"; do
@@ -86,7 +86,9 @@ setup_mac() {
 setup_wsl() {
   echo "== apt packages =="
   sudo apt-get update -y
-  sudo apt-get install -y zsh tmux git curl fzf fd-find
+  # ripgrep backs Telescope live-grep; build-essential gives the C compiler the
+  # nvim-treesitter rewrite needs to compile parsers via the tree-sitter CLI.
+  sudo apt-get install -y zsh tmux git curl fzf fd-find ripgrep build-essential
 
   mkdir -p "$HOME/.local/bin"
   if ! command -v fd >/dev/null && command -v fdfind >/dev/null; then
@@ -104,17 +106,33 @@ setup_homelab() {
   done
   mkdir -p "$HOME/.local/bin"
 
+  # nvim-treesitter (the rewrite) compiles parsers with the tree-sitter CLI,
+  # which shells out to a C compiler. nvim/tmux/zsh all work without one, but
+  # :TSUpdate fails to build parsers — so warn loudly rather than degrade in
+  # silence. This box is no-sudo, so we can't install it for them.
+  if ! command -v cc >/dev/null && ! command -v gcc >/dev/null && ! command -v clang >/dev/null; then
+    echo "WARNING: no C compiler (cc/gcc/clang) found." >&2
+    echo "         Neovim tree-sitter parsers will fail to compile until one is installed" >&2
+    echo "         (e.g. 'sudo apt install build-essential', or your distro's equivalent)." >&2
+  fi
+
   local nvim_version=v0.12.2
   local ts_version=v0.25.10
-  local nvim_asset ts_asset
+  local rg_version=15.1.0
+  local fd_version=v10.4.2
+  local nvim_asset ts_asset rg_asset fd_asset
   case "$(uname -m)" in
     x86_64|amd64)
       nvim_asset=nvim-linux-x86_64
       ts_asset=tree-sitter-linux-x64
+      rg_asset="ripgrep-$rg_version-x86_64-unknown-linux-musl"
+      fd_asset="fd-$fd_version-x86_64-unknown-linux-musl"
       ;;
     aarch64|arm64)
       nvim_asset=nvim-linux-arm64
       ts_asset=tree-sitter-linux-arm64
+      rg_asset="ripgrep-$rg_version-aarch64-unknown-linux-gnu"
+      fd_asset="fd-$fd_version-aarch64-unknown-linux-gnu"
       ;;
     *)
       echo "Unsupported architecture: $(uname -m)" >&2
@@ -142,6 +160,26 @@ setup_homelab() {
     clone https://github.com/junegunn/fzf "$HOME/.fzf"
     "$HOME/.fzf/install" --bin >/dev/null
     ln -sf "$HOME/.fzf/bin/fzf" "$HOME/.local/bin/fzf"
+  fi
+
+  # ripgrep backs Telescope live-grep; fd backs the `f` fuzzy-cd alias and is
+  # Telescope's preferred file finder. Both ship a single static binary.
+  echo "== ripgrep $rg_version (~/.local/bin) =="
+  if ! command -v rg >/dev/null && [[ ! -x "$HOME/.local/bin/rg" ]]; then
+    curl -fsSL "https://github.com/BurntSushi/ripgrep/releases/download/$rg_version/$rg_asset.tar.gz" -o /tmp/rg.tar.gz
+    tar -xzf /tmp/rg.tar.gz -C /tmp
+    cp "/tmp/$rg_asset/rg" "$HOME/.local/bin/rg"
+    chmod +x "$HOME/.local/bin/rg"
+    rm -rf /tmp/rg.tar.gz "/tmp/$rg_asset"
+  fi
+
+  echo "== fd $fd_version (~/.local/bin) =="
+  if ! command -v fd >/dev/null && [[ ! -x "$HOME/.local/bin/fd" ]]; then
+    curl -fsSL "https://github.com/sharkdp/fd/releases/download/$fd_version/$fd_asset.tar.gz" -o /tmp/fd.tar.gz
+    tar -xzf /tmp/fd.tar.gz -C /tmp
+    cp "/tmp/$fd_asset/fd" "$HOME/.local/bin/fd"
+    chmod +x "$HOME/.local/bin/fd"
+    rm -rf /tmp/fd.tar.gz "/tmp/$fd_asset"
   fi
 }
 

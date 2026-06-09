@@ -46,9 +46,11 @@ Explicitly select a host when detection is not sufficient:
 ```
 
 Homelab setup is per-user and requires `zsh`, `tmux`, `git`, and `curl` to
-already be installed. It installs Neovim, tree-sitter, fzf, shell plugins, and
-TPM under the user's home directory, then enables a persistent `main` tmux
-session with a systemd user service.
+already be installed. A C compiler (`cc`/`gcc`/`clang`) is recommended — the
+nvim-treesitter rewrite compiles parsers with it; setup warns loudly if none is
+found. It installs Neovim, tree-sitter, ripgrep, fd, fzf, shell plugins, and TPM
+under the user's home directory, then enables a persistent `main` tmux session
+with a systemd user service.
 
 To only refresh symlinks without installing anything:
 
