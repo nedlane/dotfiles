@@ -6,8 +6,8 @@ return {
       ensure_installed = {
         "mdslw", -- markdown
         "prettier", -- json, yaml
-        "stylua",   -- lua
-        "shfmt",    -- shell
+        "stylua", -- lua
+        "shfmt", -- shell
       },
     },
   },
@@ -28,13 +28,13 @@ return {
     },
     opts = {
       formatters_by_ft = {
-        lua      = { "stylua" },
-        sh       = { "shfmt" },
-        bash     = { "shfmt" },
-        zsh      = { "shfmt" },
+        lua = { "stylua" },
+        sh = { "shfmt" },
+        bash = { "shfmt" },
+        zsh = { "shfmt" },
         markdown = { "mdslw" },
-        json     = { "prettier" },
-        yaml     = { "prettier" },
+        json = { "prettier" },
+        yaml = { "prettier" },
       },
       format_on_save = { timeout_ms = 1000, lsp_fallback = true },
     },
