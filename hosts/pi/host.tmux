@@ -8,3 +8,7 @@ bind C-b send-prefix
 set -g @host_accent "#f38ba8"
 set -g @host_label " pi"
 set -g pane-active-border-style "fg=#f38ba8"
+
+# Always-on box: keep tmux across reboot. Sourced here (after the status bar) on
+# purpose — see the snippet's header. mac never sources this.
+source-file -q ~/.config/tmux/persist-sessions.tmux
