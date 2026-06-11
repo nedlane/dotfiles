@@ -15,6 +15,13 @@ fi
 # `cl` is now shared (shared/zsh/aliases.zsh).
 alias eufs="LIBGL_ALWAYS_SOFTWARE=1 ros2 launch eufs_launcher eufs_launcher.launch.py"
 
+# Tailscale: re-assert SSH by hand. --reset clears any unmentioned non-default
+# settings back to defaults so `tailscale up` won't error demanding we re-list
+# every flag. (Tailscale SSH already runs as a persistent, enabled systemd
+# service; this is just the rare manual re-assert. The hostname is
+# desktop-specific, hence this overlay rather than the shared rc.)
+alias tsup='tailscale up --reset --ssh --hostname=desktop'
+
 # --- machine identity (consumed by shared/zsh/zshrc) ---
 # Purple accent; prompt shows the real hostname.
 export DOTFILES_ACCENT=141

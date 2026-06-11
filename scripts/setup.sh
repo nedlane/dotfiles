@@ -94,6 +94,10 @@ setup_wsl() {
   if ! command -v fd >/dev/null && command -v fdfind >/dev/null; then
     ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
   fi
+
+  # apt covers the base tools above, but not a current neovim (jammy ships
+  # 0.6.x) or the tree-sitter CLI — pull those from the pinned release binaries.
+  install_local_binaries
 }
 
 setup_homelab() {
@@ -105,11 +109,22 @@ setup_homelab() {
     }
   done
   mkdir -p "$HOME/.local/bin"
+  install_local_binaries
+}
+
+# Install the pinned nvim + companion CLIs into ~/.local. Shared by the WSL and
+# homelab paths: nvim isn't packaged at a usable version on the distros we run
+# (Ubuntu jammy ships 0.6.x), so every non-mac host gets the same release binary
+# the config is pinned against. Each tool is guarded on `command -v`, so hosts
+# that already provide one from apt (rg/fd/fzf on WSL) are left untouched.
+install_local_binaries() {
+  mkdir -p "$HOME/.local/bin"
 
   # nvim-treesitter (the rewrite) compiles parsers with the tree-sitter CLI,
   # which shells out to a C compiler. nvim/tmux/zsh all work without one, but
   # :TSUpdate fails to build parsers — so warn loudly rather than degrade in
-  # silence. This box is no-sudo, so we can't install it for them.
+  # silence. Hosts without sudo can't fix this automatically; the WSL path
+  # installs build-essential up front so the warning won't fire there.
   if ! command -v cc >/dev/null && ! command -v gcc >/dev/null && ! command -v clang >/dev/null; then
     echo "WARNING: no C compiler (cc/gcc/clang) found." >&2
     echo "         Neovim tree-sitter parsers will fail to compile until one is installed" >&2
