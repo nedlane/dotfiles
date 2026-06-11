@@ -64,6 +64,9 @@ link_one() {
 link_one "$DIR/shared/zsh/zshrc"      "$HOME/.zshrc"
 link_one "$DIR/shared/p10k.zsh"       "$HOME/.p10k.zsh"
 link_one "$DIR/shared/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
+# Inert helper: only the always-on hosts' overlays `source-file` it (mac never
+# does), so linking it everywhere is harmless — it does nothing unless sourced.
+link_one "$DIR/shared/tmux/persist-sessions.tmux" "$HOME/.config/tmux/persist-sessions.tmux"
 # A stray ~/.tmux.conf would shadow the XDG path above — move it aside.
 if [ -e "$HOME/.tmux.conf" ] && [ ! -L "$HOME/.tmux.conf" ]; then
   mkdir -p "$BACKUP"

@@ -206,7 +206,12 @@ echo "== link dotfiles =="
 "$DIR/scripts/link.sh" "$host"
 install_tmux_plugins
 
-if [[ "$host" != mac && "$host" != wsl-desktop ]]; then
+# Every non-mac host is "always-on": give it linger + the persistent tmux user
+# service so the server (and its resurrect/continuum-backed sessions) survives
+# logout and reboot. mac is the laptop and deliberately persists nothing.
+# (wsl-desktop used to be excluded here — that's why linger was off and a dropped
+# SSH session silently reaped the whole tmux server.)
+if [[ "$host" != mac ]]; then
   setup_homelab_service
 fi
 

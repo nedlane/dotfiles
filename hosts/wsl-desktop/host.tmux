@@ -15,3 +15,7 @@ set -g default-command /usr/bin/zsh
 set -g @host_accent "#cba6f7"
 set -g @host_label " desktop"
 set -g pane-active-border-style "fg=#cba6f7"
+
+# Always-on box: keep tmux across reboot / wsl --shutdown. Sourced here (after
+# the status bar) on purpose — see the snippet's header. mac never sources this.
+source-file -q ~/.config/tmux/persist-sessions.tmux
