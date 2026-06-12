@@ -83,6 +83,9 @@ jobs:
       - name: Smoke-test agent-checkup
         run: ./tests/agent-checkup-smoke.sh
 
+      - name: Smoke-test discord-notify
+        run: ./tests/discord-notify-smoke.sh
+
       - name: Validate tmux config
         run: |
           home="$(mktemp -d)"
