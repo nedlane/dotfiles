@@ -62,6 +62,31 @@ os.unlink(path)
 assert reply == "All done.\nTests pass.", f"wrong reply extracted: {reply!r}"
 assert b.extract_last_reply("/nonexistent/file") == "", "missing transcript not empty"
 
+# --- incremental extraction (the one-prompt-behind fix) ---------------------------
+def entry(text):
+    return json.dumps({"type": "assistant", "message": {"content": [
+        {"type": "text", "text": text}]}}) + "\n"
+
+with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False) as f:
+    f.write(entry("reply one"))
+    path = f.name
+reply, off = b.extract_new_reply(path, 0)
+assert reply == "reply one", f"first incremental read wrong: {reply!r}"
+# Stale read after consuming everything: empty, offset unchanged.
+reply2, off2 = b.extract_new_reply(path, off)
+assert reply2 == "" and off2 == off, "stale read returned old reply (one-prompt-behind)"
+# A mid-write partial line is not consumed...
+with open(path, "a") as f:
+    f.write(entry("reply two")[: 25])
+reply3, off3 = b.extract_new_reply(path, off)
+assert reply3 == "" and off3 == off, "partial line consumed or misread"
+# ...and is picked up once complete.
+with open(path, "a") as f:
+    f.write(entry("reply two")[25:])
+reply4, off4 = b.extract_new_reply(path, off)
+assert reply4 == "reply two" and off4 > off, f"completed line not picked up: {reply4!r}"
+os.unlink(path)
+
 # --- HMAC verification ------------------------------------------------------------
 body = b'{"event_type": "claude.worker.turn_ended"}'
 sig = hmac.new(b"s3cret", body, hashlib.sha256).hexdigest()
