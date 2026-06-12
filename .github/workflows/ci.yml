@@ -80,6 +80,9 @@ jobs:
       - name: Smoke-test claude-worker-todo-relay
         run: ./tests/claude-worker-todo-relay-smoke.sh
 
+      - name: Smoke-test claude-worker-done-relay
+        run: ./tests/claude-worker-done-relay-smoke.sh
+
       - name: Smoke-test agent-checkup
         run: ./tests/agent-checkup-smoke.sh
 

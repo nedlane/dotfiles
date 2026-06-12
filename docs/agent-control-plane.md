@@ -61,9 +61,21 @@ without colliding with sessions you start by hand. Worker names are free-form
   claude-worker list / status impl
   claude-worker restart impl / stop impl
   ```
-  The orchestrator workflow is start → send (with an explicit end-marker
-  line) → `wait --for` the marker → read. `send` double-taps Enter so a
+  For long tasks the orchestrator is fire-and-forget: `start --chat
+  <thread>` → `send` → end its turn. When the worker finishes a turn (done,
+  or stopped on a question), a Stop hook (`claude-worker-done-relay`) sends
+  an HMAC-signed `claude.worker.turn_ended` event to the local Hermes
+  webhook route (127.0.0.1:8644), which wakes the planner to read the
+  worker and report into the originating thread. `--chat` is the opt-in:
+  workers without it push nothing. For quick checks the synchronous path is
+  `send` → `wait --for MARKER` → `read`; `send` double-taps Enter so a
   paste never sits unsubmitted in the input box.
+
+  **Thread affinity:** `--chat discord:<channel>:<thread>` is recorded in
+  the worker's meta; the todo relay and `discord-notify` then deliver into
+  that thread via the bot instead of the main channel, keeping each
+  conversation isolated. The Hermes webhook credentials live in
+  `~/.config/claude-workers/hermes-webhook` (chmod 600).
 - **`claude-worker-todo-relay`** (desktop only) — Claude Code hook that posts
   each worker's live checklist (TodoWrite todos and TaskCreate/TaskUpdate
   task lists) to a Discord webhook. Pure parse + POST: no Codex, no model

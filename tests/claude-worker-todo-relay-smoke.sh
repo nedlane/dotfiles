@@ -91,6 +91,24 @@ grep -q "Build the parser" "$curl_log" || fail "task list post missing completed
 grep -q "Wire the relay" "$curl_log" || fail "task list post missing in-progress task: $(cat "$curl_log")"
 grep -q "Old idea" "$curl_log" && fail "deleted task was posted: $(cat "$curl_log")"
 
+# --- a worker with a recorded chat posts into its thread via the hermes bot -----
+mkdir -p "$state/threaded"
+printf 'name=threaded\nchat=discord:111:222\n' > "$state/threaded/meta"
+cat > "$stub/hermes" <<'STUB'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "send" ]]; then shift; fi
+body=""
+case " $* " in *" -f - "*) body="$(cat)" ;; esac
+echo "hermes-send $* :: $body" >> "$CURL_LOG"
+STUB
+chmod +x "$stub/hermes"
+: > "$curl_log"
+run CLAUDE_WORKER=threaded >/dev/null 2>&1 || fail "threaded relay failed"
+grep -q -- "-t discord:111:222" "$curl_log" || fail "did not target the worker's thread: $(cat "$curl_log")"
+grep -q "Implementing the fix" "$curl_log" || fail "thread post missing checklist: $(cat "$curl_log")"
+grep -q "curl " "$curl_log" && fail "threaded worker fell back to the webhook"
+rm "$stub/hermes"
+
 # --- a missing webhook file is a silent no-op, never an error -------------------
 : > "$curl_log"
 rm "$webhook_file"
