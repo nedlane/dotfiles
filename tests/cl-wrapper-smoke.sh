@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Verifies the `cl` Claude Code launcher (shared/zsh/aliases.zsh): it forces a
-# remote-control session whose title is "<host> / <dir>" so each device is
-# identifiable, passes extra args through, and yields to an explicit --name.
+# Verifies the `cl` Claude Code launcher (shared/zsh/aliases.zsh, delegating
+# to shared/bin/claude-launch): it forces a remote-control session whose title
+# is "<host> / <dir>" so each device is identifiable, passes extra args
+# through, and yields to an explicit --name.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -16,18 +17,28 @@ fail() {
 run() {
   local host="$1" proj="$2"
   shift 2
-  local base dir log
+  local base dir log stub
   base="$(mktemp -d)"
   dir="$base/$proj"
-  mkdir -p "$dir"
+  stub="$base/stub-bin"
+  mkdir -p "$dir" "$stub"
   log="$base/log"
 
-  # Stub `claude` as a function so the wrapper records its argv without
-  # launching anything; run from $dir so ${PWD:t} resolves to <projname>.
-  CL_LOG="$log" CL_DIR="$dir" DOTFILES_HOST="$host" ROOT="$ROOT" zsh -c '
-    claude() { print -r -- "claude $*" >> "$CL_LOG"; }
+  # Stub `claude` as a PATH executable so the launcher records its argv
+  # without launching anything (cl delegates to a bash script, so a zsh
+  # function stub would not be seen); run from $dir so the title's directory
+  # part resolves to <projname>.
+  cat > "$stub/claude" <<'STUB'
+#!/usr/bin/env bash
+echo "claude $*" >> "$CL_LOG"
+STUB
+  chmod +x "$stub/claude"
+
+  CL_LOG="$log" CL_DIR="$dir" CL_STUB="$stub" DOTFILES_HOST="$host" \
+    DOTFILES_DIR="$ROOT" zsh -c '
+    export PATH="$CL_STUB:$PATH"
     cd "$CL_DIR"
-    source "$ROOT/shared/zsh/aliases.zsh"
+    source "$DOTFILES_DIR/shared/zsh/aliases.zsh"
     cl "$@"
   ' cl-smoke "$@"
 
