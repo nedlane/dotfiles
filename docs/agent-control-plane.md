@@ -1,17 +1,19 @@
 # Local agent control plane
 
-Desktop-only setup that lets Discord/OpenClaw/Hermes drive Codex as a
-planner, while Codex orchestrates persistent **interactive** Claude Code
-workers in tmux. Both sides run on subscriptions: Codex on the ChatGPT
-plan (OAuth), Claude Code on the Claude plan via its normal interactive
-login. No Anthropic API keys, no OpenRouter, no provider billing, anywhere.
+Desktop-only setup where the Hermes gateway (a full Discord bot) plans and
+orchestrates persistent **interactive** Claude Code workers in tmux. Both
+sides run on subscriptions: Hermes's model is `gpt-5.4-mini` via Codex OAuth
+on the ChatGPT plan (planning/summarising doesn't need a frontier model);
+Claude Code uses the Claude plan via its normal interactive login. No
+Anthropic API keys, no OpenRouter, no provider billing, anywhere.
 
 ```
-Discord / OpenClaw / Hermes        (chat front-end; you configure this)
-            │
+        Discord                    (you, from anywhere; threads supported)
+            │ gateway bot (HermesAgent)
             ▼
-        Codex CLI                  (planner/scheduler; ChatGPT subscription)
-            │  shell calls
+     Hermes gateway                (~/.hermes, systemd user service;
+            │                       gpt-5.4-mini via Codex OAuth/ChatGPT)
+            │  shell calls (claude-workers skill)
             ▼
      claude-worker …               (hosts/wsl-desktop/bin, desktop-only)
             │  tmux sessions cw-<name>
@@ -20,10 +22,12 @@ Discord / OpenClaw / Hermes        (chat front-end; you configure this)
             │
             ▼
   interactive Claude Code          (Claude subscription, remote-control mode)
-            │  PostToolUse hook on TodoWrite
-            ▼
+       │                │ discord-notify (skill): pings via the Hermes bot
+       │                └────────────────────────────▶ Discord
+       │ PostToolUse hook on TodoWrite|TaskCreate|TaskUpdate
+       ▼
  claude-worker-todo-relay ──────▶  Discord webhook (live task checkboxes,
-                                    zero Codex/model tokens)
+                                    zero planner/model tokens)
 ```
 
 ## Naming contract
@@ -62,9 +66,18 @@ without colliding with sessions you start by hand. Worker names are free-form
   `claude-worker` (they carry `CLAUDE_WORKER=<name>`); manual sessions stay
   quiet. Deduped, capped to Discord's message size, always exits 0 so a relay
   problem can never break a session.
+- **`discord-notify`** (desktop only) — one-shot message to Ned on Discord
+  from any shell or agent session, via the Hermes bot (`hermes send`, no LLM;
+  falls back to the webhook). Worker sessions are auto-tagged
+  `worker:<name>`. The linked Claude skill (`~/.claude/skills/discord-notify`)
+  tells sessions it exists.
 - **`agent-checkup`** (desktop only) — readiness report (PASS/WARN/FAIL plus
   a manual-checks list). Run it after linking and whenever something feels
   off; exits 1 if anything hard-fails.
+
+Hermes itself learns the worker commands from the linked gateway skill
+(`~/.hermes/skills/claude-workers`, source in
+`hosts/wsl-desktop/hermes/skills/`).
 
 ## State and logs
 
@@ -108,16 +121,27 @@ The Discord webhook URL lives in `~/.config/claude-workers/discord-webhook`
    `TodoWrite` carries the whole checklist; for the task tools the relay
    re-reads `~/.claude/tasks/<session-id>/` so creates, edits, completions,
    and deletions all re-post the full list.
-4. **Discord/OpenClaw/Hermes → Codex** — configure your bridge so Discord
-   messages reach Codex on this machine (OpenClaw/Hermes setup is outside
-   this repo). The only contract Codex needs: plan with its own tools, and
-   drive workers exclusively through `claude-worker …` shell calls.
+4. **Hermes gateway (the Discord bot)** — installed via the official
+   installer into `~/.hermes` (outside this repo). One-time setup:
+   `hermes auth add openai-codex --type oauth` (device-code login with the
+   ChatGPT account — never an API key), pick the model with `hermes model`
+   (currently `gpt-5.4-mini`; planning doesn't need a frontier model),
+   put `DISCORD_BOT_TOKEN=…` and `DISCORD_ALLOWED_USERS=<your user id>` in
+   `~/.hermes/.env`, then `hermes gateway install` + `hermes gateway start`
+   (systemd user service; linger keeps it up after logout). The bot needs
+   Message Content + Server Members intents in the Discord developer portal.
+   Its contract: plan with its own tools, drive workers exclusively through
+   `claude-worker …` shell calls (taught by the linked skill).
 
 ## Verifying the subscription paths
 
-- **Codex:** `codex login status` should show a ChatGPT login;
+- **Codex CLI:** `codex login status` should show a ChatGPT login;
   `agent-checkup` PASSes when `~/.codex/auth.json` has `auth_mode: chatgpt`.
   `OPENAI_API_KEY` should not be set in the environment.
+- **Hermes:** `hermes auth status openai-codex` should say "logged in", and
+  `~/.hermes/logs/agent.log` should show
+  `provider=openai-codex base_url=https://chatgpt.com/backend-api/codex` on
+  conversation turns — that's the subscription endpoint, not the API.
 - **Claude Code:** inside any worker (`tmux attach -t cw-<name>`) run
   `/status` — the account should be your Claude subscription, not an API key.
   `claude-launch` warns on stderr if it had to strip a forbidden variable.
@@ -135,8 +159,9 @@ claude-worker stop scratch
 
 ## Operating rules
 
-- Codex plans, schedules, and summarises; Claude Code workers implement,
-  review, and test. Codex never edits code directly in this setup.
+- Hermes (the planner) plans, schedules, and summarises; Claude Code workers
+  implement, review, and test. The planner never edits code directly in this
+  setup.
 - Workers run on the interactive subscription path only — no `claude -p`
   pipelines, no API keys, no provider configs, no OpenRouter.
 - Workers don't push or edit main/master directly unless explicitly asked;

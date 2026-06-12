@@ -54,6 +54,10 @@ for host in "${hosts[@]}"; do
       for tool in claude-worker claude-worker-todo-relay agent-checkup; do
         assert_link "$home/.local/bin/$tool" "$ROOT/hosts/wsl-desktop/bin/$tool"
       done
+      assert_link "$home/.hermes/skills/claude-workers" \
+        "$ROOT/hosts/wsl-desktop/hermes/skills/claude-workers"
+      assert_link "$home/.claude/skills/discord-notify" \
+        "$ROOT/hosts/wsl-desktop/claude/skills/discord-notify"
       ;;
     *)
       [[ ! -e "$home/.gitconfig" ]] || fail "$host unexpectedly linked the full-profile Git config"
