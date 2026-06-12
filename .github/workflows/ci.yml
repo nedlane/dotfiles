@@ -92,6 +92,9 @@ jobs:
       - name: Smoke-test claude-bridge
         run: ./tests/claude-bridge-smoke.sh
 
+      - name: Smoke-test bridge-ctl
+        run: ./tests/bridge-ctl-smoke.sh
+
       - name: Validate claude-bridge Python syntax
         run: PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile hosts/wsl-desktop/bin/claude-bridge
 
