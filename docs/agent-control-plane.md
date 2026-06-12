@@ -34,24 +34,41 @@ provider billing, anywhere.
 - **Channel-per-repo, one worker per repo, no threads.** A config file maps
   Discord channel ids to `{name, dir}`. Your message in `#ghpr` goes to
   worker `ghpr` in that repo; the worker's reply comes back to `#ghpr`.
-- **Replies are exact.** The worker's Stop hook reports the session
-  transcript path; the bridge extracts the final assistant message verbatim
-  (split at Discord's 2000-char limit, capped at 8k with a `!screen` hint).
+- **Push-first: the worker is the publisher.** Every worker starts with an
+  injected system-prompt protocol: message Ned via `discord-notify` ONLY
+  when the task is complete, it is blocked on a question, or a check-in was
+  requested — multi-hour tasks run silently with no per-turn chatter, and
+  workers create/address other channels with `bridge-ctl` and
+  `discord-notify -t` (tools, not screen reading).
+- **Fallback replies are exact.** When a turn ends and the worker didn't
+  message Ned itself, the bridge extracts the final assistant message
+  verbatim from the session transcript (incremental byte-offset reads, so a
+  pre-flush Stop hook yields a retry instead of the previous turn's reply),
+  split at Discord's 2000-char limit, capped at 8k with a `!screen` hint.
 - **Idle reaping + resume.** Workers idle longer than `idle_minutes`
   (default 45) are stopped. The next message revives the worker with
   `claude --continue`, restoring the conversation from Claude Code's own
   session history — never hundreds of instances, never lost context.
-- **Busy queueing.** Messages sent while the worker is mid-turn get a ⏳
-  reaction and are delivered one at a time as turns end.
+- **Steering, not queueing.** Messages are delivered straight into the
+  session even mid-turn (Claude Code natively treats typed-while-running
+  input as steering); ⏳ marks delivered-while-busy, ✅ delivered-while-idle.
+  Messages starting with `/` are sent as typed keystrokes so Claude Code
+  slash commands execute. `!checkin` asks a running worker to post a 3-5
+  line progress update and keep going.
 - Only allowlisted Discord user ids are honored.
 
 ## Tools
 
 - **`claude-bridge`** (desktop only) — the daemon. Discord commands
-  (allowed users, any visible channel): `!status`, `!stop [name]`,
-  `!restart [name]`, `!screen [name]`, `!addrepo <name> <path>` (creates
-  `#<name>` under the Claude category and saves the mapping). Localhost
-  event listener on `127.0.0.1:8765` (HMAC-signed `X-Webhook-Signature`).
+  (allowed users, any visible channel): `!status`, `!checkin [name]`,
+  `!stop [name]`, `!restart [name]`, `!screen [name]`,
+  `!addrepo <name> <path>` (creates `#<name>` under the Claude category and
+  saves the mapping). Localhost event listener on `127.0.0.1:8765`
+  (HMAC-signed `X-Webhook-Signature`).
+- **`bridge-ctl`** (desktop only) — the tools-based bridge interface for
+  workers and shells: `bridge-ctl addrepo <name> <path>` creates and maps a
+  repo channel via a signed event (returns the channel id);
+  `bridge-ctl repos` lists mappings.
 - **`claude-worker`** (desktop only) — worker lifecycle:
   ```sh
   claude-worker start impl --dir ~/projects/ghpr --chat discord:<channel>
@@ -60,8 +77,10 @@ provider billing, anywhere.
   claude-worker read impl 120 / list / status / restart / stop
   ```
   `start` blocks until the worker is ready and auto-accepts the folder-trust
-  dialog; `send` double-taps Enter so a paste never sits unsubmitted;
-  `--chat` records the repo channel and opts the worker into push-on-done.
+  dialog; `send` verifies submission (retries Enter while the input box
+  still holds the text, `--type` sends literal keystrokes for slash
+  commands); `--chat` records the repo channel and opts the worker into
+  push-on-done.
 - **`claude-worker-done-relay`** — Stop hook; signed `turn_ended` event
   (with the transcript path) to the bridge when a chat-bound worker ends a
   turn.
