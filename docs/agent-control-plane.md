@@ -56,8 +56,9 @@ without colliding with sessions you start by hand. Worker names are free-form
   claude-worker restart impl / stop impl
   ```
 - **`claude-worker-todo-relay`** (desktop only) — Claude Code hook that posts
-  each worker's live todo checklist to a Discord webhook. Pure parse + POST:
-  no Codex, no model calls, no tokens. Only fires in sessions started by
+  each worker's live checklist (TodoWrite todos and TaskCreate/TaskUpdate
+  task lists) to a Discord webhook. Pure parse + POST: no Codex, no model
+  calls, no tokens. Only fires in sessions started by
   `claude-worker` (they carry `CLAUDE_WORKER=<name>`); manual sessions stay
   quiet. Deduped, capped to Discord's message size, always exits 0 so a relay
   problem can never break a session.
@@ -97,13 +98,16 @@ The Discord webhook URL lives in `~/.config/claude-workers/discord-webhook`
      "hooks": {
        "PostToolUse": [
          {
-           "matcher": "TodoWrite",
+           "matcher": "TodoWrite|TaskCreate|TaskUpdate",
            "hooks": [{ "type": "command", "command": "claude-worker-todo-relay" }]
          }
        ]
      }
    }
    ```
+   `TodoWrite` carries the whole checklist; for the task tools the relay
+   re-reads `~/.claude/tasks/<session-id>/` so creates, edits, completions,
+   and deletions all re-post the full list.
 4. **Discord/OpenClaw/Hermes → Codex** — configure your bridge so Discord
    messages reach Codex on this machine (OpenClaw/Hermes setup is outside
    this repo). The only contract Codex needs: plan with its own tools, and

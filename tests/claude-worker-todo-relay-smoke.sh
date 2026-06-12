@@ -75,6 +75,22 @@ run CLAUDE_WORKER=impl >/dev/null 2>&1
 run >/dev/null 2>&1 || fail "relay failed on a non-worker session"
 [[ -s "$curl_log" ]] && fail "non-worker session posted to Discord"
 
+# --- TaskCreate/TaskUpdate render the on-disk task list -------------------------
+tasks_dir="$base/tasks"
+mkdir -p "$tasks_dir"
+printf '{"id":"1","subject":"Build the parser","status":"completed"}\n' > "$tasks_dir/1.json"
+printf '{"id":"2","subject":"Wire the relay","status":"in_progress"}\n' > "$tasks_dir/2.json"
+printf '{"id":"3","subject":"Old idea","status":"deleted"}\n' > "$tasks_dir/3.json"
+task_hook='{"session_id":"abc-123","cwd":"/home/u/projects/myproj","tool_name":"TaskUpdate","tool_input":{"taskId":"2","status":"in_progress"}}'
+: > "$curl_log"
+printf '%s' "$task_hook" | env CURL_LOG="$curl_log" PATH="$stub:$PATH" \
+  CLAUDE_WORKERS_STATE="$state" CLAUDE_TASKS_DIR="$tasks_dir" \
+  CLAUDE_WORKERS_DISCORD_WEBHOOK_FILE="$webhook_file" CLAUDE_WORKER=impl \
+  "$RELAY" || fail "relay failed on TaskUpdate hook"
+grep -q "Build the parser" "$curl_log" || fail "task list post missing completed task: $(cat "$curl_log")"
+grep -q "Wire the relay" "$curl_log" || fail "task list post missing in-progress task: $(cat "$curl_log")"
+grep -q "Old idea" "$curl_log" && fail "deleted task was posted: $(cat "$curl_log")"
+
 # --- a missing webhook file is a silent no-op, never an error -------------------
 : > "$curl_log"
 rm "$webhook_file"
