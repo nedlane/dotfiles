@@ -91,23 +91,26 @@ grep -q "Build the parser" "$curl_log" || fail "task list post missing completed
 grep -q "Wire the relay" "$curl_log" || fail "task list post missing in-progress task: $(cat "$curl_log")"
 grep -q "Old idea" "$curl_log" && fail "deleted task was posted: $(cat "$curl_log")"
 
-# --- a worker with a recorded chat posts into its thread via the hermes bot -----
+# --- a worker with a recorded chat posts into its channel via the bridge --------
 mkdir -p "$state/threaded"
 printf 'name=threaded\nchat=discord:111:222\n' > "$state/threaded/meta"
-cat > "$stub/hermes" <<'STUB'
-#!/usr/bin/env bash
-if [[ "${1:-}" == "send" ]]; then shift; fi
-body=""
-case " $* " in *" -f - "*) body="$(cat)" ;; esac
-echo "hermes-send $* :: $body" >> "$CURL_LOG"
-STUB
-chmod +x "$stub/hermes"
+bridge_cfg="$base/bridge-webhook"
+cat > "$bridge_cfg" <<'EOF'
+BRIDGE_WEBHOOK_URL=http://127.0.0.1:8765/event
+BRIDGE_WEBHOOK_SECRET=bridgesecret
+EOF
 : > "$curl_log"
-run CLAUDE_WORKER=threaded >/dev/null 2>&1 || fail "threaded relay failed"
-grep -q -- "-t discord:111:222" "$curl_log" || fail "did not target the worker's thread: $(cat "$curl_log")"
-grep -q "Implementing the fix" "$curl_log" || fail "thread post missing checklist: $(cat "$curl_log")"
-grep -q "curl " "$curl_log" && fail "threaded worker fell back to the webhook"
-rm "$stub/hermes"
+(
+  export CURL_LOG="$curl_log" PATH="$stub:$PATH" CLAUDE_WORKERS_STATE="$state" \
+    CLAUDE_WORKERS_BRIDGE_WEBHOOK_FILE="$bridge_cfg" \
+    CLAUDE_WORKERS_DISCORD_WEBHOOK_FILE="$webhook_file" CLAUDE_WORKER=threaded
+  printf '%s' "$hook_input" | "$RELAY" >/dev/null 2>&1
+) || fail "chat-bound relay failed"
+grep -q "claude.worker.send" "$curl_log" || fail "no bridge send event: $(cat "$curl_log")"
+grep -q "discord:111:222" "$curl_log" || fail "did not target the worker's channel: $(cat "$curl_log")"
+grep -q "Implementing the fix" "$curl_log" || fail "channel post missing checklist: $(cat "$curl_log")"
+grep -q "X-Webhook-Signature" "$curl_log" || fail "bridge event not signed: $(cat "$curl_log")"
+grep -q "discord.example" "$curl_log" && fail "chat-bound worker fell back to the webhook"
 
 # --- a missing webhook file is a silent no-op, never an error -------------------
 : > "$curl_log"

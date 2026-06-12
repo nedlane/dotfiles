@@ -149,12 +149,14 @@ if [[ "$host" == wsl-desktop ]]; then
   for tool in "$DIR"/hosts/wsl-desktop/bin/*; do
     link_one "$tool" "$HOME/.local/bin/$(basename "$tool")"
   done
-  # Hermes gateway skill teaching the planner how to drive claude-worker.
-  link_one "$DIR/hosts/wsl-desktop/hermes/skills/claude-workers" \
-    "$HOME/.hermes/skills/claude-workers"
-  # Claude Code skill teaching sessions/workers to ping Ned on Discord.
-  link_one "$DIR/hosts/wsl-desktop/claude/skills/discord-notify" \
-    "$HOME/.claude/skills/discord-notify"
+  # Claude Code skills: pinging Ned on Discord, managing the bridge.
+  for skill in discord-notify claude-bridge; do
+    link_one "$DIR/hosts/wsl-desktop/claude/skills/$skill" \
+      "$HOME/.claude/skills/$skill"
+  done
+  # The Discord<->worker bridge daemon (enable: systemctl --user enable --now claude-bridge).
+  link_one "$DIR/hosts/wsl-desktop/systemd/claude-bridge.service" \
+    "$HOME/.config/systemd/user/claude-bridge.service"
 fi
 
 # --- mac-only extras -------------------------------------------------------
