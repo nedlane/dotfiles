@@ -53,12 +53,17 @@ without colliding with sessions you start by hand. Worker names are free-form
   API billing.
 - **`claude-worker`** (desktop only) — worker lifecycle:
   ```sh
-  claude-worker start impl --dir ~/projects/ghpr   # detached tmux worker
+  claude-worker start impl --dir ~/projects/ghpr   # blocks until ready;
+                                                   # auto-accepts folder trust
   claude-worker send impl "run the test suite"     # '-' reads stdin
+  claude-worker wait impl --for DONE --timeout 900 # block until marker/idle
   claude-worker read impl 120                      # capture the screen
   claude-worker list / status impl
   claude-worker restart impl / stop impl
   ```
+  The orchestrator workflow is start → send (with an explicit end-marker
+  line) → `wait --for` the marker → read. `send` double-taps Enter so a
+  paste never sits unsubmitted in the input box.
 - **`claude-worker-todo-relay`** (desktop only) — Claude Code hook that posts
   each worker's live checklist (TodoWrite todos and TaskCreate/TaskUpdate
   task lists) to a Discord webhook. Pure parse + POST: no Codex, no model
