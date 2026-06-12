@@ -1,187 +1,125 @@
 # Local agent control plane
 
-Desktop-only setup where the Hermes gateway (a full Discord bot) plans and
-orchestrates persistent **interactive** Claude Code workers in tmux. Both
-sides run on subscriptions: Hermes's model is `gpt-5.4-mini` via Codex OAuth
-on the ChatGPT plan (planning/summarising doesn't need a frontier model);
-Claude Code uses the Claude plan via its normal interactive login. No
-Anthropic API keys, no OpenRouter, no provider billing, anywhere.
+Desktop-only setup that turns Discord into a remote control for interactive
+Claude Code workers running in tmux on this machine. There is **no LLM in
+the routing path** — a small deterministic bridge maps Discord channels to
+workers; Claude Code, on the Claude subscription via its normal interactive
+login, is the only intelligence. No Anthropic API keys, no OpenRouter, no
+provider billing, anywhere.
 
 ```
-        Discord                    (you, from anywhere; threads supported)
-            │ gateway bot (HermesAgent)
+        Discord                  #<repo> channels under the "Claude" category
+            │  bot (gateway connection, Message Content intent)
             ▼
-     Hermes gateway                (~/.hermes, systemd user service;
-            │                       gpt-5.4-mini via Codex OAuth/ChatGPT)
-            │  shell calls (claude-workers skill)
+      claude-bridge              deterministic pipe; python daemon
+            │                    (systemd user service, no LLM)
+            │  claude-worker start/send
             ▼
-     claude-worker …               (hosts/wsl-desktop/bin, desktop-only)
+     claude-worker …             (hosts/wsl-desktop/bin, desktop-only)
             │  tmux sessions cw-<name>
             ▼
-      claude-launch                (shared/bin, used by `cl` everywhere)
+      claude-launch              (shared/bin, used by `cl` everywhere)
             │
             ▼
-  interactive Claude Code          (Claude subscription, remote-control mode)
-       │                │ discord-notify (skill): pings via the Hermes bot
-       │                └────────────────────────────▶ Discord
-       │ PostToolUse hook on TodoWrite|TaskCreate|TaskUpdate
+  interactive Claude Code        (Claude subscription, remote-control mode)
+       │                │
+       │                └─ discord-notify / todo relay → repo channel
+       │  Stop hook (claude-worker-done-relay, signed localhost event)
        ▼
- claude-worker-todo-relay ──────▶  Discord webhook (live task checkboxes,
-                                    zero planner/model tokens)
+      claude-bridge ───────────▶ worker's reply posted to the repo channel
 ```
 
-## Naming contract
+## Model
 
-| Kind | tmux session | Claude session title |
-|---|---|---|
-| Manual `cl` session | (wherever you ran it) | `<host> / <dir>` |
-| Orchestrated worker | `cw-<name>` | `<host> / worker:<name>` |
-
-Manual sessions keep the directory-based titles; workers are always
-`worker:<name>`, so Codex (and the claude.ai session list) can track them
-without colliding with sessions you start by hand. Worker names are free-form
-(`impl`, `reviewer`, `tester`, `ghpr-impl`, …) — nothing is tied to one repo.
+- **Channel-per-repo, one worker per repo, no threads.** A config file maps
+  Discord channel ids to `{name, dir}`. Your message in `#ghpr` goes to
+  worker `ghpr` in that repo; the worker's reply comes back to `#ghpr`.
+- **Replies are exact.** The worker's Stop hook reports the session
+  transcript path; the bridge extracts the final assistant message verbatim
+  (split at Discord's 2000-char limit, capped at 8k with a `!screen` hint).
+- **Idle reaping + resume.** Workers idle longer than `idle_minutes`
+  (default 45) are stopped. The next message revives the worker with
+  `claude --continue`, restoring the conversation from Claude Code's own
+  session history — never hundreds of instances, never lost context.
+- **Busy queueing.** Messages sent while the worker is mid-turn get a ⏳
+  reaction and are delivered one at a time as turns end.
+- Only allowlisted Discord user ids are honored.
 
 ## Tools
 
-- **`claude-launch`** (`shared/bin`, all hosts) — standalone launcher for
-  interactive remote-control Claude Code; `cl` delegates to it. Resolves the
-  host prefix from `$DOTFILES_HOST` or the linker's recorded host file, so it
-  works from non-interactive shells. Strips `ANTHROPIC_API_KEY`,
-  `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL`, Bedrock/Vertex variables
-  before starting, so a calling environment can never flip a session onto
-  API billing.
+- **`claude-bridge`** (desktop only) — the daemon. Discord commands
+  (allowed users, any visible channel): `!status`, `!stop [name]`,
+  `!restart [name]`, `!screen [name]`, `!addrepo <name> <path>` (creates
+  `#<name>` under the Claude category and saves the mapping). Localhost
+  event listener on `127.0.0.1:8765` (HMAC-signed `X-Webhook-Signature`).
 - **`claude-worker`** (desktop only) — worker lifecycle:
   ```sh
-  claude-worker start impl --dir ~/projects/ghpr   # blocks until ready;
-                                                   # auto-accepts folder trust
+  claude-worker start impl --dir ~/projects/ghpr --chat discord:<channel>
   claude-worker send impl "run the test suite"     # '-' reads stdin
-  claude-worker wait impl --for DONE --timeout 900 # block until marker/idle
-  claude-worker read impl 120                      # capture the screen
-  claude-worker list / status impl
-  claude-worker restart impl / stop impl
+  claude-worker wait impl --for DONE --timeout 900 # synchronous use
+  claude-worker read impl 120 / list / status / restart / stop
   ```
-  For long tasks the orchestrator is fire-and-forget: `start --chat
-  <thread>` → `send` → end its turn. When the worker finishes a turn (done,
-  or stopped on a question), a Stop hook (`claude-worker-done-relay`) sends
-  an HMAC-signed `claude.worker.turn_ended` event to the local Hermes
-  webhook route (127.0.0.1:8644), which wakes the planner to read the
-  worker and report into the originating thread. `--chat` is the opt-in:
-  workers without it push nothing. For quick checks the synchronous path is
-  `send` → `wait --for MARKER` → `read`; `send` double-taps Enter so a
-  paste never sits unsubmitted in the input box.
+  `start` blocks until the worker is ready and auto-accepts the folder-trust
+  dialog; `send` double-taps Enter so a paste never sits unsubmitted;
+  `--chat` records the repo channel and opts the worker into push-on-done.
+- **`claude-worker-done-relay`** — Stop hook; signed `turn_ended` event
+  (with the transcript path) to the bridge when a chat-bound worker ends a
+  turn.
+- **`claude-worker-todo-relay`** — PostToolUse hook on
+  `TodoWrite|TaskCreate|TaskUpdate`; posts the live checklist to the repo
+  channel via the bridge (webhook fallback to the main channel).
+- **`discord-notify`** — one-shot message from any shell/Claude session;
+  workers default to their own repo channel.
+- **`claude-launch`** (shared, all hosts) — interactive remote-control
+  launcher behind `cl` and all workers; strips `ANTHROPIC_API_KEY`/Bedrock/
+  Vertex variables so nothing can push a session onto API billing.
+- **`agent-checkup`** (desktop only) — PASS/WARN/FAIL readiness report.
 
-  **Thread affinity:** `--chat discord:<channel>:<thread>` is recorded in
-  the worker's meta; the todo relay and `discord-notify` then deliver into
-  that thread via the bot instead of the main channel, keeping each
-  conversation isolated. The Hermes webhook credentials live in
-  `~/.config/claude-workers/hermes-webhook` (chmod 600).
-- **`claude-worker-todo-relay`** (desktop only) — Claude Code hook that posts
-  each worker's live checklist (TodoWrite todos and TaskCreate/TaskUpdate
-  task lists) to a Discord webhook. Pure parse + POST: no Codex, no model
-  calls, no tokens. Only fires in sessions started by
-  `claude-worker` (they carry `CLAUDE_WORKER=<name>`); manual sessions stay
-  quiet. Deduped, capped to Discord's message size, always exits 0 so a relay
-  problem can never break a session.
-- **`discord-notify`** (desktop only) — one-shot message to Ned on Discord
-  from any shell or agent session, via the Hermes bot (`hermes send`, no LLM;
-  falls back to the webhook). Worker sessions are auto-tagged
-  `worker:<name>`. The linked Claude skill (`~/.claude/skills/discord-notify`)
-  tells sessions it exists.
-- **`agent-checkup`** (desktop only) — readiness report (PASS/WARN/FAIL plus
-  a manual-checks list). Run it after linking and whenever something feels
-  off; exits 1 if anything hard-fails.
+## State, config, secrets
 
-Hermes itself learns the worker commands from the linked gateway skill
-(`~/.hermes/skills/claude-workers`, source in
-`hosts/wsl-desktop/hermes/skills/`).
+- Worker state: `~/.local/state/claude-workers/<name>/` (`meta` key=value,
+  `output.log` from pipe-pane, relay dedupe hash). No secrets.
+- Bridge config: `~/.config/claude-bridge/config.json` (`category_id`,
+  `allowed_users`, `idle_minutes`, `listen_port`, `repos`).
+- Secrets (all chmod 600, never in env or logs):
+  `~/.config/claude-workers/discord-bot-token` (bot token),
+  `~/.config/claude-workers/bridge-webhook` (listener URL + HMAC secret),
+  `~/.config/claude-workers/discord-webhook` (fallback channel webhook).
 
-## State and logs
+## Hooks (in `~/.claude/settings.json`)
 
-Per-worker state lives in `~/.local/state/claude-workers/<name>/`
-(`$CLAUDE_WORKERS_STATE` overrides; no secrets stored):
-
-- `meta` — flat `key=value`: `name`, `session`, `dir`, `label`, `created`,
-  `log`. Orchestrators should read these files instead of shell state.
-- `output.log` — append-only raw terminal output (`tmux pipe-pane`). It
-  captures whatever the worker prints, so don't paste secrets into workers.
-- `todo-relay.last` — dedupe hash for the Discord relay.
-
-The Discord webhook URL lives in `~/.config/claude-workers/discord-webhook`
-(`chmod 600`), never in env vars, logs, or this repo.
-
-## Manual setup (one-time)
-
-1. **Subscriptions/auth** — `codex login` with ChatGPT; run `claude` once and
-   `/login` with the Claude subscription. Then run `agent-checkup`.
-2. **Discord relay** — create a channel webhook (channel settings →
-   Integrations → Webhooks), then:
-   ```sh
-   mkdir -p ~/.config/claude-workers
-   printf '%s\n' '<webhook url>' > ~/.config/claude-workers/discord-webhook
-   chmod 600 ~/.config/claude-workers/discord-webhook
-   ```
-3. **Todo-relay hook** — add to `~/.claude/settings.json` (merge with any
-   existing hooks):
-   ```json
-   {
-     "hooks": {
-       "PostToolUse": [
-         {
-           "matcher": "TodoWrite|TaskCreate|TaskUpdate",
-           "hooks": [{ "type": "command", "command": "claude-worker-todo-relay" }]
-         }
-       ]
-     }
-   }
-   ```
-   `TodoWrite` carries the whole checklist; for the task tools the relay
-   re-reads `~/.claude/tasks/<session-id>/` so creates, edits, completions,
-   and deletions all re-post the full list.
-4. **Hermes gateway (the Discord bot)** — installed via the official
-   installer into `~/.hermes` (outside this repo). One-time setup:
-   `hermes auth add openai-codex --type oauth` (device-code login with the
-   ChatGPT account — never an API key), pick the model with `hermes model`
-   (currently `gpt-5.4-mini`; planning doesn't need a frontier model),
-   put `DISCORD_BOT_TOKEN=…` and `DISCORD_ALLOWED_USERS=<your user id>` in
-   `~/.hermes/.env`, then `hermes gateway install` + `hermes gateway start`
-   (systemd user service; linger keeps it up after logout). The bot needs
-   Message Content + Server Members intents in the Discord developer portal.
-   Its contract: plan with its own tools, drive workers exclusively through
-   `claude-worker …` shell calls (taught by the linked skill).
-
-## Verifying the subscription paths
-
-- **Codex CLI:** `codex login status` should show a ChatGPT login;
-  `agent-checkup` PASSes when `~/.codex/auth.json` has `auth_mode: chatgpt`.
-  `OPENAI_API_KEY` should not be set in the environment.
-- **Hermes:** `hermes auth status openai-codex` should say "logged in", and
-  `~/.hermes/logs/agent.log` should show
-  `provider=openai-codex base_url=https://chatgpt.com/backend-api/codex` on
-  conversation turns — that's the subscription endpoint, not the API.
-- **Claude Code:** inside any worker (`tmux attach -t cw-<name>`) run
-  `/status` — the account should be your Claude subscription, not an API key.
-  `claude-launch` warns on stderr if it had to strip a forbidden variable.
-
-## First smoke test
-
-```sh
-agent-checkup
-claude-worker start scratch --dir /tmp
-claude-worker send scratch "Reply with the word ready, then use TodoWrite to plan: say hi, say bye"
-sleep 20 && claude-worker read scratch 60     # expect "ready" + a todo list
-# the todo checkboxes should also appear in the Discord channel
-claude-worker stop scratch
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "TodoWrite|TaskCreate|TaskUpdate",
+        "hooks": [{ "type": "command", "command": "claude-worker-todo-relay" }]
+      }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "claude-worker-done-relay" }] }
+    ]
+  }
+}
 ```
+
+## Setup / first smoke test
+
+1. `pip3 install --user discord.py`; bot needs Message Content +
+   Manage Channels in the Discord developer portal.
+2. `./scripts/link.sh`, then `systemctl --user enable --now claude-bridge`
+   (linger should be on: `loginctl enable-linger $USER`).
+3. `agent-checkup` — fix anything red.
+4. In Discord: `!addrepo scratch /tmp`, then message `#scratch`
+   ("reply with the word ready"). Expect 🚀/✅ reactions, the reply posted
+   back, and `💤` after the idle window.
 
 ## Operating rules
 
-- Hermes (the planner) plans, schedules, and summarises; Claude Code workers
-  implement, review, and test. The planner never edits code directly in this
-  setup.
-- Workers run on the interactive subscription path only — no `claude -p`
-  pipelines, no API keys, no provider configs, no OpenRouter.
+- Workers run on the interactive Claude subscription only — no `claude -p`,
+  no API keys, no provider configs.
 - Workers don't push or edit main/master directly unless explicitly asked;
   work lands on branches/PRs.
-- One worker per role (`impl`, `reviewer`, `tester`); pick the repo per task
-  with `--dir`. Restart a wedged worker with `claude-worker restart <name>`.
+- The bridge never interprets content; if routing logic needs "judgment,"
+  that judgment belongs in the worker's prompt, not the bridge.

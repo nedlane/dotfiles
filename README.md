@@ -94,11 +94,12 @@ Windows peers and offline peers are excluded.
 
 ## Agent Control Plane (desktop only)
 
-`hosts/wsl-desktop/bin/` carries tooling for orchestrating persistent
-interactive Claude Code workers in tmux (`claude-worker`), a readiness check
-(`agent-checkup`), and a token-free Discord todo relay
-(`claude-worker-todo-relay`). The shared `claude-launch` backs the `cl`
-shorthand on every host. See [docs/agent-control-plane.md](docs/agent-control-plane.md).
+`hosts/wsl-desktop/bin/` carries a Discord remote control for interactive
+Claude Code: `claude-bridge` maps repo channels to persistent tmux workers
+(`claude-worker`), with hook-driven reply/checklist relays and a readiness
+check (`agent-checkup`). No LLM in the routing path. The shared
+`claude-launch` backs the `cl` shorthand on every host.
+See [docs/agent-control-plane.md](docs/agent-control-plane.md).
 
 ## Layout
 
