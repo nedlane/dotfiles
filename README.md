@@ -92,6 +92,14 @@ peers are queried in parallel with a timeout.
 Remote peers need Tailscale SSH, tmux, and a tailnet ACL that permits access.
 Windows peers and offline peers are excluded.
 
+## Agent Control Plane (desktop only)
+
+`hosts/wsl-desktop/bin/` carries tooling for orchestrating persistent
+interactive Claude Code workers in tmux (`claude-worker`), a readiness check
+(`agent-checkup`), and a token-free Discord todo relay
+(`claude-worker-todo-relay`). The shared `claude-launch` backs the `cl`
+shorthand on every host. See [docs/agent-control-plane.md](docs/agent-control-plane.md).
+
 ## Layout
 
 ```text
