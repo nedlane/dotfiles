@@ -54,6 +54,15 @@ grep -q '"channel_id": "222"' <<<"$out" || fail "bridge response not surfaced: $
 run addrepo bad /definitely/not/a/dir >/dev/null 2>&1 && fail "bad dir accepted"
 [[ -s "$log" ]] && fail "bad dir still hit the network"
 
+# --- start posts a signed start event ------------------------------------------------
+: > "$log"
+out="$(run start ghpr)" || fail "start failed: $out"
+grep -q "claude.bridge.start" "$log" || fail "no start event: $(cat "$log")"
+grep -q '"name": "ghpr"' "$log" || fail "name missing from start event: $(cat "$log")"
+: > "$log"
+run start >/dev/null 2>&1 && fail "start without a name accepted"
+[[ -s "$log" ]] && fail "nameless start still hit the network"
+
 # --- repos lists the local mapping --------------------------------------------------
 out="$(run repos)" || fail "repos failed"
 grep -q "ghpr" <<<"$out" || fail "repos missing mapping: $out"

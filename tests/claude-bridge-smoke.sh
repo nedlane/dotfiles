@@ -117,6 +117,16 @@ assert "--continue" not in args, "fresh start should not --continue"
 args = b.start_args("ghpr", "/x", 123, resume=True)
 assert "--continue" in args and args.index("--continue") > args.index("--"), "resume flag misplaced"
 
+# --- the orchestrator worker gets the control-plane brief on top ------------------------
+assert b.system_prompt("ghpr") == b.PROTOCOL, "plain worker prompt should be PROTOCOL only"
+orch = b.system_prompt("orchestrator")
+assert orch.startswith(b.PROTOCOL), "orchestrator lost the base protocol"
+assert "bridge-ctl start" in orch, "orchestrator brief missing bridge-ctl start"
+assert "claude-worker send" in orch, "orchestrator brief missing claude-worker send"
+args = b.start_args("orchestrator", "/home/u", 9, resume=False)
+assert "ORCHESTRATOR" in args[args.index("--append-system-prompt") + 1], \
+    "start_args did not inject the orchestrator brief"
+
 # --- missing binaries surface as failed results, not exceptions ------------------------
 r = b._run(["definitely-not-a-real-command-xyz"])
 assert r.returncode == 127, "missing command did not yield rc 127"
