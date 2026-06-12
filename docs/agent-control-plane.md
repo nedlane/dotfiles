@@ -49,6 +49,12 @@ provider billing, anywhere.
   (default 45) are stopped. The next message revives the worker with
   `claude --continue`, restoring the conversation from Claude Code's own
   session history — never hundreds of instances, never lost context.
+- **An orchestrator channel.** The worker named `orchestrator` (mapped like
+  any repo, directory doesn't matter) gets an extra injected brief teaching
+  it `bridge-ctl`/`claude-worker`/`agent-checkup`, so `#orchestrator` is a
+  natural-language remote for the whole plane — "spin up a worker on ghpr
+  and have it triage the failing tests" instead of bot commands. The `!`
+  commands keep working everywhere.
 - **Steering, not queueing.** Messages are delivered straight into the
   session even mid-turn (Claude Code natively treats typed-while-running
   input as steering); ⏳ marks delivered-while-busy, ✅ delivered-while-idle.
@@ -68,6 +74,8 @@ provider billing, anywhere.
 - **`bridge-ctl`** (desktop only) — the tools-based bridge interface for
   workers and shells: `bridge-ctl addrepo <name> <path>` creates and maps a
   repo channel via a signed event (returns the channel id);
+  `bridge-ctl start <name>` starts that repo's worker through the bridge
+  (protocol injected, `--continue` resume — what the orchestrator uses);
   `bridge-ctl repos` lists mappings.
 - **`claude-worker`** (desktop only) — worker lifecycle:
   ```sh
