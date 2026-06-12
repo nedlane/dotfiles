@@ -51,7 +51,7 @@ for host in "${hosts[@]}"; do
     wsl-desktop)
       assert_link "$home/.gitconfig" "$ROOT/shared/git/gitconfig"
       [[ ! -e "$home/.config/alacritty" ]] || fail "$host unexpectedly linked Alacritty"
-      for tool in claude-worker claude-worker-todo-relay agent-checkup; do
+      for tool in claude-worker claude-worker-todo-relay claude-worker-done-relay agent-checkup; do
         assert_link "$home/.local/bin/$tool" "$ROOT/hosts/wsl-desktop/bin/$tool"
       done
       assert_link "$home/.hermes/skills/claude-workers" \
