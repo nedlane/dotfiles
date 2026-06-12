@@ -88,16 +88,25 @@ run start impl --dir "$proj" >/dev/null 2>&1 && fail "double start unexpectedly 
 run start "bad name" >/dev/null 2>&1 && fail "invalid name unexpectedly accepted"
 run start "../escape" >/dev/null 2>&1 && fail "path-like name unexpectedly accepted"
 
-# --- send: bracketed paste then Enter (twice, for TUI race), exact target -------
+# --- send: bracketed paste, Enter, verified submission ---------------------------
 : > "$tmux_log"
 run send impl "do the thing"
 grep -q -- "load-buffer" "$tmux_log" || fail "send did not stage a buffer"
 grep -q -- "paste-buffer -p" "$tmux_log" || fail "send did not use bracketed paste"
-[[ "$(grep -c -- "send-keys -t =cw-impl: Enter" "$tmux_log")" -ge 2 ]] \
-  || fail "send did not double-Enter: $(cat "$tmux_log")"
+grep -q -- "send-keys -t =cw-impl: Enter" "$tmux_log" || fail "send did not press Enter"
+grep -q -- "capture-pane" "$tmux_log" || fail "send did not verify submission"
 paste_line="$(grep -n -- 'paste-buffer' "$tmux_log" | head -1 | cut -d: -f1)"
 enter_line="$(grep -n -- 'send-keys' "$tmux_log" | head -1 | cut -d: -f1)"
 [[ "$paste_line" -lt "$enter_line" ]] || fail "Enter sent before paste"
+
+# A message stuck in the input box (last ❯ line still shows it) is retried
+# with more Enters, then reported as a failure instead of silently dropped.
+printf '❯ do the thing\n' > "$base/screen"
+: > "$tmux_log"
+run send impl "do the thing" >/dev/null 2>&1 && fail "stuck send unexpectedly reported success"
+[[ "$(grep -c -- "send-keys -t =cw-impl: Enter" "$tmux_log")" -ge 4 ]] \
+  || fail "stuck send did not retry Enter: $(cat "$tmux_log")"
+printf '> idle\n❯ \n' > "$base/screen"
 
 # --- send reads stdin with '-' --------------------------------------------------
 : > "$tmux_log"
