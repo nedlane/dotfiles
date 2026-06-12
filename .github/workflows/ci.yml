@@ -38,12 +38,12 @@ jobs:
       - name: Run ShellCheck
         run: |
           shellcheck scripts/*.sh scripts/lib/*.sh tests/*.sh
-          # shared/bin mixes zsh (tmux-switch) and POSIX-sh tools; shellcheck
-          # can't parse zsh, so lint only the non-zsh ones — this covers any
-          # future sh/bash tool dropped in here automatically. The desktop
-          # control-plane tools are all bash, but get the same guard.
+          # shared/bin mixes zsh (tmux-switch) and POSIX-sh tools, and the
+          # desktop control plane adds python (claude-bridge); shellcheck
+          # only parses sh/bash, so skip the rest by shebang — this covers
+          # any future tool dropped in here automatically.
           for f in shared/bin/* hosts/wsl-desktop/bin/*; do
-            head -1 "$f" | grep -q zsh || shellcheck "$f"
+            head -1 "$f" | grep -qE 'zsh|python' || shellcheck "$f"
           done
 
       - name: Validate Lua syntax
@@ -88,6 +88,12 @@ jobs:
 
       - name: Smoke-test discord-notify
         run: ./tests/discord-notify-smoke.sh
+
+      - name: Smoke-test claude-bridge
+        run: ./tests/claude-bridge-smoke.sh
+
+      - name: Validate claude-bridge Python syntax
+        run: PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile hosts/wsl-desktop/bin/claude-bridge
 
       - name: Validate tmux config
         run: |

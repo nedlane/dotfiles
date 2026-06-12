@@ -4,8 +4,8 @@ set -euo pipefail
 # Verifies the worker completion push (hosts/wsl-desktop/bin/
 # claude-worker-done-relay), a Claude Code Stop hook: when a thread-affine
 # worker (started with --chat) ends a turn, it sends an HMAC-signed event to
-# the local Hermes webhook route so the planner wakes up, reads the worker,
-# and reports into the originating Discord thread. No model usage here.
+# the local claude-bridge listener so it can post the worker's reply into
+# the repo channel, with the transcript path for exact text extraction.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RELAY="$ROOT/hosts/wsl-desktop/bin/claude-worker-done-relay"
@@ -20,13 +20,13 @@ trap 'rm -rf "$base"' EXIT
 stub="$base/stub-bin"
 state="$base/state"
 log="$base/curl.log"
-cfg="$base/hermes-webhook"
+cfg="$base/bridge-webhook"
 mkdir -p "$stub" "$state/impl"
 
 printf 'name=impl\nchat=discord:111:222\ndir=/home/u/projects/myproj\n' > "$state/impl/meta"
 cat > "$cfg" <<'EOF'
-HERMES_WEBHOOK_URL=http://127.0.0.1:8644/webhooks/claude-worker-events
-HERMES_WEBHOOK_SECRET=testsecret123
+BRIDGE_WEBHOOK_URL=http://127.0.0.1:8765/event
+BRIDGE_WEBHOOK_SECRET=testsecret123
 EOF
 
 cat > "$stub/curl" <<'STUB'
@@ -43,14 +43,14 @@ done
 STUB
 chmod +x "$stub/curl"
 
-hook_input='{"session_id":"abc-123","cwd":"/home/u/projects/myproj","stop_hook_active":false}'
+hook_input='{"session_id":"abc-123","cwd":"/home/u/projects/myproj","transcript_path":"/home/u/.claude/projects/x/abc-123.jsonl","stop_hook_active":false}'
 
 run() { # run [env...] -- [stdin override]
   local envs=()
   while [[ "${1:-}" != "--" ]]; do envs+=("$1"); shift; done
   shift
   printf '%s' "${1:-$hook_input}" | env CURL_LOG="$log" PATH="$stub:/usr/bin:/bin" \
-    CLAUDE_WORKERS_STATE="$state" CLAUDE_WORKERS_HERMES_WEBHOOK_FILE="$cfg" \
+    CLAUDE_WORKERS_STATE="$state" CLAUDE_WORKERS_BRIDGE_WEBHOOK_FILE="$cfg" \
     "${envs[@]}" "$RELAY"
 }
 
@@ -60,6 +60,9 @@ grep -q "DATA:" "$log" || fail "no event was posted"
 grep -q '"event_type": "claude.worker.turn_ended"' "$log" || fail "missing event_type: $(cat "$log")"
 grep -q '"worker": "impl"' "$log" || fail "missing worker: $(cat "$log")"
 grep -q '"chat": "discord:111:222"' "$log" || fail "missing chat: $(cat "$log")"
+grep -q '"transcript_path": "/home/u/.claude/projects/x/abc-123.jsonl"' "$log" \
+  || fail "missing transcript_path: $(cat "$log")"
+grep -q '"session_id": "abc-123"' "$log" || fail "missing session_id: $(cat "$log")"
 grep -q "X-Webhook-Signature" "$log" || fail "missing signature header: $(cat "$log")"
 
 # The signature must be the HMAC-SHA256 of the exact posted body.
