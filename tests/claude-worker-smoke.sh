@@ -33,7 +33,14 @@ case "$1" in
   has-session)  [[ -e "$TMUX_STUB_ALIVE" ]] ;;
   new-session)  touch "$TMUX_STUB_ALIVE" ;;
   load-buffer)  cat > /dev/null ;;
-  capture-pane) cat "$TMUX_STUB_SCREEN" 2>/dev/null ;;
+  capture-pane)
+    cat "$TMUX_STUB_SCREEN" 2>/dev/null
+    # Optional one-shot screen transition after a look (simulates a worker
+    # that was about to get busy when first observed).
+    if [[ -n "${TMUX_STUB_SCREEN_AFTER_READ:-}" && -e "${TMUX_STUB_SCREEN_AFTER_READ:-}" ]]; then
+      mv "$TMUX_STUB_SCREEN_AFTER_READ" "$TMUX_STUB_SCREEN"
+    fi
+    ;;
   send-keys)
     if [[ -n "${TMUX_STUB_NEXT_SCREEN:-}" && -e "${TMUX_STUB_NEXT_SCREEN:-}" ]]; then
       mv "$TMUX_STUB_NEXT_SCREEN" "$TMUX_STUB_SCREEN"
@@ -52,6 +59,7 @@ printf '> idle\n❯ \n' > "$base/screen"
 run() {
   TMUX_STUB_LOG="$tmux_log" TMUX_STUB_ALIVE="$base/alive" \
     TMUX_STUB_SCREEN="$base/screen" TMUX_STUB_NEXT_SCREEN="$base/next-screen" \
+    TMUX_STUB_SCREEN_AFTER_READ="$base/screen-after" \
     CLAUDE_WORKERS_STATE="$state" CLAUDE_WORKER_SEND_DELAY=0 \
     CLAUDE_WORKER_POLL=0 CLAUDE_WORKER_START_TIMEOUT=3 \
     PATH="$stub:$PATH" "$ROOT/hosts/wsl-desktop/bin/claude-worker" "$@"
@@ -132,6 +140,16 @@ run wait impl --timeout 1 >/dev/null 2>&1 || rc=$?
 printf 'do X then print MARKER\nMARKER\n❯ \n' > "$base/screen"
 run wait impl --for MARKER --timeout 5 >/dev/null || fail "wait --for missed marker on idle worker"
 run wait impl --timeout 5 >/dev/null || fail "wait did not detect idle prompt"
+
+# Race right after send: the first look sees the echoed marker and no busy
+# indicator yet (the worker hasn't started); the next look sees it busy.
+# wait must require the done-state to hold on two consecutive polls.
+printf '❯ do X then print MARKER\n❯ \n' > "$base/screen"
+printf 'working on it\nesc to interrupt\n❯ \n' > "$base/screen-after"
+rc=0
+run wait impl --for MARKER --timeout 1 >/dev/null 2>&1 || rc=$?
+[[ "$rc" -eq 2 ]] || fail "wait --for fell for the just-sent idle window (got $rc)"
+printf '> done\n❯ \n' > "$base/screen"
 
 # --- start auto-accepts the folder-trust dialog ----------------------------------
 rm -f "$base/alive"
