@@ -108,6 +108,12 @@ run send impl "do the thing" >/dev/null 2>&1 && fail "stuck send unexpectedly re
   || fail "stuck send did not retry Enter: $(cat "$tmux_log")"
 printf '> idle\n❯ \n' > "$base/screen"
 
+# --- send --type sends literal keystrokes (slash commands), no paste ------------
+: > "$tmux_log"
+run send impl --type "/compact"
+grep -q -- "send-keys -t =cw-impl: -l /compact" "$tmux_log" || fail "--type did not type the text: $(cat "$tmux_log")"
+grep -q -- "paste-buffer" "$tmux_log" && fail "--type unexpectedly pasted"
+
 # --- send reads stdin with '-' --------------------------------------------------
 : > "$tmux_log"
 printf 'line1\nline2\n' | run send impl -
