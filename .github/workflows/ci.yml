@@ -40,8 +40,9 @@ jobs:
           shellcheck scripts/*.sh scripts/lib/*.sh tests/*.sh
           # shared/bin mixes zsh (tmux-switch) and POSIX-sh tools; shellcheck
           # can't parse zsh, so lint only the non-zsh ones — this covers any
-          # future sh/bash tool dropped in here automatically.
-          for f in shared/bin/*; do
+          # future sh/bash tool dropped in here automatically. The desktop
+          # control-plane tools are all bash, but get the same guard.
+          for f in shared/bin/* hosts/wsl-desktop/bin/*; do
             head -1 "$f" | grep -q zsh || shellcheck "$f"
           done
 
@@ -69,6 +70,18 @@ jobs:
 
       - name: Smoke-test cl wrapper
         run: ./tests/cl-wrapper-smoke.sh
+
+      - name: Smoke-test claude-launch
+        run: ./tests/claude-launch-smoke.sh
+
+      - name: Smoke-test claude-worker
+        run: ./tests/claude-worker-smoke.sh
+
+      - name: Smoke-test claude-worker-todo-relay
+        run: ./tests/claude-worker-todo-relay-smoke.sh
+
+      - name: Smoke-test agent-checkup
+        run: ./tests/agent-checkup-smoke.sh
 
       - name: Validate tmux config
         run: |
