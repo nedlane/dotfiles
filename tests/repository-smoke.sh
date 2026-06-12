@@ -11,7 +11,9 @@ fail() {
 
 while IFS= read -r script; do
   [[ -x "$script" ]] || fail "$script is not executable"
-done < <(find scripts tests shared/bin hosts/mac/bin hosts/wsl-desktop/bin -type f \( -name '*.sh' -o -path 'shared/bin/*' -o -path 'hosts/mac/bin/*' -o -path 'hosts/wsl-desktop/bin/*' \) | sort)
+done < <(find scripts tests shared/bin hosts/mac/bin hosts/wsl-desktop/bin \
+  -name __pycache__ -prune -o \
+  -type f \( -name '*.sh' -o -path 'shared/bin/*' -o -path 'hosts/mac/bin/*' -o -path 'hosts/wsl-desktop/bin/*' \) -print | sort)
 
 if git ls-files | grep -Eq '(^|/)(\.ssh|\.config|\.gitconfig|\.zshrc)(/|$)'; then
   fail "tracked home-directory state found"

@@ -105,6 +105,18 @@ with tempfile.TemporaryDirectory() as d:
     cfg2 = b.load_config(path)
     assert cfg2["repos"]["123"]["name"] == "ghpr", "repo mapping lost in round-trip"
 
+# --- worker start args inject the Discord protocol -------------------------------------
+args = b.start_args("ghpr", "/home/u/projects/ghpr", 123, resume=False)
+assert args[:3] == ["claude-worker", "start", "ghpr"], f"bad start argv: {args}"
+assert "--chat" in args and "discord:123" in args, "chat target missing"
+assert "--append-system-prompt" in args, "protocol not injected"
+proto = args[args.index("--append-system-prompt") + 1]
+assert "discord-notify" in proto, "protocol does not mention discord-notify"
+assert "check-in" in proto, "protocol does not cover check-ins"
+assert "--continue" not in args, "fresh start should not --continue"
+args = b.start_args("ghpr", "/x", 123, resume=True)
+assert "--continue" in args and args.index("--continue") > args.index("--"), "resume flag misplaced"
+
 # --- missing binaries surface as failed results, not exceptions ------------------------
 r = b._run(["definitely-not-a-real-command-xyz"])
 assert r.returncode == 127, "missing command did not yield rc 127"

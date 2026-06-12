@@ -59,6 +59,7 @@ run CLAUDE_WORKER=impl -- "tests are green" || fail "worker send failed"
 grep -q "claude.worker.send" "$log" || fail "no bridge event: $(cat "$log")"
 grep -q "discord:111:222" "$log" || fail "worker chat not targeted: $(cat "$log")"
 grep -q "worker:impl" "$log" || fail "worker tag missing: $(cat "$log")"
+grep -q '"worker": "impl"' "$log" || fail "event missing worker field (bridge can't suppress its fallback): $(cat "$log")"
 grep -q "X-Webhook-Signature" "$log" || fail "bridge event not signed: $(cat "$log")"
 grep -q "discord.example" "$log" && fail "chat-bound send fell back to the webhook"
 
