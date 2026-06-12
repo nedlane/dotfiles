@@ -142,6 +142,15 @@ for tool in "$DIR"/shared/bin/*; do
   link_one "$tool" "$HOME/.local/bin/$(basename "$tool")"
 done
 
+# --- desktop-only extras ----------------------------------------------------
+# The agent control plane (claude-worker & friends) runs only on the desktop;
+# other hosts just get the shared claude-launch above.
+if [[ "$host" == wsl-desktop ]]; then
+  for tool in "$DIR"/hosts/wsl-desktop/bin/*; do
+    link_one "$tool" "$HOME/.local/bin/$(basename "$tool")"
+  done
+fi
+
 # --- mac-only extras -------------------------------------------------------
 if [[ "$host" == mac ]]; then
   link_one "$DIR/hosts/mac/alacritty" "$HOME/.config/alacritty"
