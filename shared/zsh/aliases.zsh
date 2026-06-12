@@ -20,31 +20,10 @@ alias docker-compose="docker compose"
 
 # Claude Code: launch an always-on remote-control session whose title is
 # "<host> / <dir>", so every device is identifiable in the claude.ai/code and
-# mobile session list. The explicit --name skips Claude's auto-generated title,
-# which otherwise reflects only the last message and hides which machine a
-# session runs on. The host prefix is forced to a curated device name
-# (mac/desktop/minipc/minipc2/pi) so it reads cleanly in the session list,
-# regardless of the box's actual hostname; ${PWD:t} is the current directory's
-# basename. An explicit --name/-n from the caller wins.
+# mobile session list. The naming/auth semantics live in the standalone
+# shared/bin/claude-launch (also used by claude-worker for orchestrated
+# sessions); `cl` is just the interactive shorthand. An explicit --name/-n
+# from the caller wins over the injected title.
 cl() {
-  local host
-  case "${DOTFILES_HOST:-}" in
-    mac)         host=mac ;;
-    wsl-desktop) host=desktop ;;
-    minipc)      host=minipc ;;
-    minipc2)     host=minipc2 ;;
-    pi)          host=pi ;;
-    *)           host="${DOTFILES_HOST:-$(hostname -s 2>/dev/null || hostname)}" ;;
-  esac
-  local title="${host:+$host / }${PWD:t}"
-  local arg
-  for arg in "$@"; do
-    case "$arg" in
-      --name|--name=*|-n)
-        claude --dangerously-skip-permissions --remote-control "$@"
-        return
-        ;;
-    esac
-  done
-  claude --dangerously-skip-permissions --remote-control --name "$title" "$@"
+  "${DOTFILES_DIR:-$HOME/dotfiles}/shared/bin/claude-launch" "$@"
 }

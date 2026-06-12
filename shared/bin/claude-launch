@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Launch an interactive Claude Code remote-control session with a stable,
+# device-identifying title. Standalone equivalent of the `cl` zsh function
+# (shared/zsh/aliases.zsh delegates here), so it works from bash, cron, tmux,
+# SSH, Codex tools, and other non-interactive callers without sourcing zsh.
+#
+#   claude-launch                  # title "<host> / <cwd basename>"
+#   claude-launch --label NAME     # title "<host> / NAME" (worker sessions)
+#   claude-launch --name TITLE     # explicit name wins, nothing injected
+#   claude-launch -- --model opus  # extra args pass through to claude
+#
+# The host prefix is the curated device name (mac/desktop/minipc/minipc2/pi)
+# from $DOTFILES_HOST, falling back to the host file the linker records, so
+# the title is right even in shells that never sourced the zsh config.
+#
+# Deliberately subscription-only: API/provider billing env vars are stripped
+# before claude starts, so a calling environment (an orchestrator, a Discord
+# bridge, a misconfigured shell) can never flip the session onto Anthropic
+# API-key, Bedrock, or Vertex billing. Auth must come from the normal
+# interactive `claude` login.
+set -euo pipefail
+
+# --- strip API/provider billing env ------------------------------------------
+for var in ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN ANTHROPIC_BASE_URL \
+           ANTHROPIC_CUSTOM_HEADERS ANTHROPIC_BEDROCK_BASE_URL \
+           ANTHROPIC_VERTEX_PROJECT_ID CLAUDE_CODE_USE_BEDROCK \
+           CLAUDE_CODE_USE_VERTEX AWS_BEARER_TOKEN_BEDROCK; do
+  if [[ -n "${!var:-}" ]]; then
+    echo "claude-launch: unsetting $var (interactive subscription auth only)" >&2
+    unset "$var"
+  fi
+done
+
+# --- curated host prefix (same mapping as the `cl` wrapper used) -------------
+host_id="${DOTFILES_HOST:-}"
+if [[ -z "$host_id" ]]; then
+  host_id="$(cat "${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/host" 2>/dev/null || true)"
+fi
+case "$host_id" in
+  mac)         host=mac ;;
+  wsl-desktop) host=desktop ;;
+  minipc)      host=minipc ;;
+  minipc2)     host=minipc2 ;;
+  pi)          host=pi ;;
+  '')          host="$(hostname -s 2>/dev/null || hostname)" ;;
+  *)           host="$host_id" ;;
+esac
+
+# --- extract --label; detect explicit --name/-n ------------------------------
+label=""
+named=0
+args=()
+while (($#)); do
+  case "$1" in
+    --label)   label="${2:?claude-launch: --label needs a value}"; shift 2 ;;
+    --label=*) label="${1#--label=}"; shift ;;
+    --name|--name=*|-n) named=1; args+=("$1"); shift ;;
+    *) args+=("$1"); shift ;;
+  esac
+done
+
+if (( named )); then
+  exec claude --dangerously-skip-permissions --remote-control \
+    ${args[@]+"${args[@]}"}
+fi
+
+title="${host:+$host / }${label:-$(basename "$PWD")}"
+exec claude --dangerously-skip-permissions --remote-control --name "$title" \
+  ${args[@]+"${args[@]}"}
