@@ -80,6 +80,11 @@ with tempfile.TemporaryDirectory() as d:
     cfg2 = b.load_config(path)
     assert cfg2["repos"]["123"]["name"] == "ghpr", "repo mapping lost in round-trip"
 
+# --- missing binaries surface as failed results, not exceptions ------------------------
+r = b._run(["definitely-not-a-real-command-xyz"])
+assert r.returncode == 127, "missing command did not yield rc 127"
+assert "definitely-not-a-real-command-xyz" in r.stderr, "missing-command error lost"
+
 # --- chat target parsing --------------------------------------------------------------
 assert b.channel_from_chat("discord:123") == 123
 assert b.channel_from_chat("discord:123:456") == 123
