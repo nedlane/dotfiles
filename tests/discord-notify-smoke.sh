@@ -54,6 +54,14 @@ grep -q "build finished" "$log" || fail "message text missing: $(cat "$log")"
 run CLAUDE_WORKER=impl -- "tests are green" || fail "worker send failed"
 grep -q "worker:impl" "$log" || fail "worker tag missing: $(cat "$log")"
 
+# --- a worker with a recorded chat defaults to its own thread --------------------
+mkdir -p "$base/state/impl"
+printf 'name=impl\nchat=discord:111:222\n' > "$base/state/impl/meta"
+: > "$log"
+run CLAUDE_WORKER=impl CLAUDE_WORKERS_STATE="$base/state" -- "threaded ping" \
+  || fail "thread-default send failed"
+grep -q -- "-t discord:111:222" "$log" || fail "worker chat default not used: $(cat "$log")"
+
 # --- explicit target passes through ----------------------------------------------
 : > "$log"
 run -- -t discord:#ops "deploy done" || fail "explicit target failed"

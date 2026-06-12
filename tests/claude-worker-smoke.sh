@@ -32,6 +32,7 @@ echo "tmux $*" >> "$TMUX_STUB_LOG"
 case "$1" in
   has-session)  [[ -e "$TMUX_STUB_ALIVE" ]] ;;
   new-session)  touch "$TMUX_STUB_ALIVE" ;;
+  kill-session) rm -f "$TMUX_STUB_ALIVE" ;;
   load-buffer)  cat > /dev/null ;;
   capture-pane)
     cat "$TMUX_STUB_SCREEN" 2>/dev/null
@@ -150,6 +151,14 @@ rc=0
 run wait impl --for MARKER --timeout 1 >/dev/null 2>&1 || rc=$?
 [[ "$rc" -eq 2 ]] || fail "wait --for fell for the just-sent idle window (got $rc)"
 printf '> done\n❯ \n' > "$base/screen"
+
+# --- start --chat records the originating thread; restart preserves it ----------
+rm -f "$base/alive"
+run start threaded --dir "$proj" --chat "discord:111:222" >/dev/null || fail "start --chat failed"
+grep -qx "chat=discord:111:222" "$state/threaded/meta" || fail "meta missing chat: $(cat "$state/threaded/meta")"
+run restart threaded >/dev/null || fail "restart of threaded worker failed"
+grep -qx "chat=discord:111:222" "$state/threaded/meta" || fail "restart dropped chat"
+run start "spacey" --dir "$proj" --chat "bad target" >/dev/null 2>&1 && fail "whitespace chat accepted"
 
 # --- start auto-accepts the folder-trust dialog ----------------------------------
 rm -f "$base/alive"

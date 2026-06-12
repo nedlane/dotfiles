@@ -29,7 +29,10 @@ produces worse results than the worker would.
 
 ```sh
 claude-worker list                          # NAME / STATE / DIR table
-claude-worker start <name> --dir <repo>     # BLOCKS until the worker is ready
+claude-worker start <name> --dir <repo> --chat <platform:chat:thread>
+                                            # BLOCKS until the worker is ready;
+                                            # --chat = this conversation's
+                                            # address, enables push-on-done
 claude-worker send <name> "<message>"       # paste + submit ('-' = stdin)
 claude-worker wait <name> --for TEXT --timeout 900
                                             # block until TEXT appears on the
@@ -46,21 +49,37 @@ pick the repo per task with `--dir`). tmux sessions are `cw-<name>`; Claude
 session titles are `<host> / worker:<name>`. State and logs live in
 `~/.local/state/claude-workers/<name>/` (`meta` is flat key=value).
 
-## The one true workflow
+## Default workflow: fire-and-forget (long or unknown-length tasks)
 
 ```sh
-claude-worker start impl --dir ~/projects/foo        # returns "state: ready"
-claude-worker send impl "Do X. End your reply with the line DONE_X."
-claude-worker wait impl --for DONE_X --timeout 900   # exit 0=done, 2=timeout
-claude-worker read impl 80                           # collect the result
+claude-worker start impl --dir ~/projects/foo --chat <this conversation's chat target>
+claude-worker send impl "Do X. If you need a decision from Ned, stop and ask. End your final reply with the line DONE_X."
 ```
 
-Always give the worker an explicit end-marker line (like `DONE_X`) and wait
-for it with `wait --for`. On timeout (exit 2), `read` to see what it's stuck
-on — don't immediately restart. If `wait` returns suspiciously fast, the
-result must still be on screen — `read` and check; if the worker hasn't
-actually produced the result, `wait` again rather than doing the work
-yourself. Never `stop` a worker until you have read its result.
+Then tell Ned the worker has started and **end your turn**. Do NOT wait, do
+NOT poll. When the worker finishes (or stops to ask a question), the system
+wakes you automatically with a `claude.worker.turn_ended` event telling you
+which worker to `read` and where to report. The `--chat` target is this
+conversation's platform address (e.g. `discord:<channel_id>:<thread_id>`) —
+pass it so the worker's checklists and your final summary land in the same
+thread the request came from.
+
+When woken by a turn_ended event: `claude-worker read <name> 120`, then
+either summarise the result or relay the worker's question into the given
+chat target. If you relay a question, `send` Ned's answer back to the worker
+when he replies and end your turn again — you'll be woken for the next one.
+
+## Synchronous workflow: only for quick checks (< ~2 minutes)
+
+```sh
+claude-worker send impl "Quick: print the failing test names. End with DONE_Q."
+claude-worker wait impl --for DONE_Q --timeout 120   # exit 0=done, 2=timeout
+claude-worker read impl 80
+```
+
+On timeout (exit 2), `read` to see what it's stuck on — don't immediately
+restart, and never take the task over yourself. Never `stop` a worker until
+you have read its result.
 
 ## Operating rules
 
