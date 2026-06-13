@@ -67,10 +67,14 @@ provider billing, anywhere.
 
 - **`claude-bridge`** (desktop only) — the daemon. Discord commands
   (allowed users, any visible channel): `!status`, `!checkin [name]`,
-  `!stop [name]`, `!restart [name]`, `!screen [name]`,
-  `!addrepo <name> <path>` (creates `#<name>` under the Claude category and
-  saves the mapping). Localhost event listener on `127.0.0.1:8765`
-  (HMAC-signed `X-Webhook-Signature`).
+  `!model <model> [name]` (typed `/model`), `!clear [name]` (fresh context —
+  restarts the worker *without* `--continue`, the deterministic wipe),
+  `!compact [name]` (typed `/compact`), `!stop [name]`, `!restart [name]`,
+  `!screen [name]`, `!addrepo <name> <path>` (creates `#<name>` under the
+  Claude category and saves the mapping). Any message starting with `/` is
+  typed into the worker as keystrokes, so every Claude Code slash command
+  works from Discord (e.g. `/compact focus on the PR work`). Localhost event
+  listener on `127.0.0.1:8765` (HMAC-signed `X-Webhook-Signature`).
 - **`bridge-ctl`** (desktop only) — the tools-based bridge interface for
   workers and shells: `bridge-ctl addrepo <name> <path>` creates and maps a
   repo channel via a signed event (returns the channel id);
