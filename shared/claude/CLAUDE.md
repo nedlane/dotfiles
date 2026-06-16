@@ -12,7 +12,8 @@
 
 ## AI attribution
 
-- Never add `Co-Authored-By: Claude ...` or any AI attribution trailers.
+- Never add `Co-Authored-By:
+  Claude ...` or any AI attribution trailers.
 - Never mention Claude, Claude Code, Anthropic, or any AI tool in commit
   messages, PR titles, or PR bodies.
 - This applies to every repo unless a project's CLAUDE.md explicitly says
@@ -38,14 +39,6 @@
 
 ## Subagents
 
-- You may spawn Sonnet subagents automatically when useful.
-  You do not need to ask before using them.
-- Be more conservative with Opus subagents.
-  You may use up to 2 Opus subagents automatically when the task genuinely
-  benefits from deeper reasoning.
-- If you want to spawn more than 2 Opus subagents for a task, ask first.
-  Do not ask for this if the user has specified the task should be done
-  autonomously
 - Do not use subagents just to appear thorough.
   Use them when they have a clear job that can be done independently.
 - The main agent remains responsible for the final answer, final code changes,
