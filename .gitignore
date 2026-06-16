@@ -25,3 +25,7 @@
 # Third-party / self-managing tool state
 .oh-my-zsh/
 .tmux/
+
+# Python bytecode cache (e.g. from claude-bridge)
+__pycache__/
+*.pyc
