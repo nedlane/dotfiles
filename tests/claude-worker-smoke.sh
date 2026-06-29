@@ -24,8 +24,13 @@ mkdir -p "$stub" "$proj"
 
 # Stub tmux: records argv; `has-session` succeeds iff $TMUX_STUB_ALIVE exists
 # (and `new-session` creates it, like the real thing); `capture-pane` plays
-# back $TMUX_STUB_SCREEN; `send-keys` advances to $TMUX_STUB_NEXT_SCREEN if
-# one is staged (simulates dismissing a dialog); `load-buffer` drains stdin.
+# back $TMUX_STUB_SCREEN. The input box is modelled so submission verification
+# can be exercised: `load-buffer` stages the paste text into $TMUX_STUB_BUFFER
+# and `paste-buffer` reflects it into the box (`❯ <text>`), unless
+# $TMUX_STUB_DROP_PASTE simulates a booting/compacting TUI that drops input.
+# `send-keys` advances to a staged $TMUX_STUB_NEXT_SCREEN (dismissing a dialog)
+# if present; otherwise `-l TEXT` types into the box and Enter submits it
+# (clearing the box) unless $TMUX_STUB_STICKY simulates swallowed keys.
 cat > "$stub/tmux" <<'STUB'
 #!/usr/bin/env bash
 echo "tmux $*" >> "$TMUX_STUB_LOG"
@@ -33,7 +38,12 @@ case "$1" in
   has-session)  [[ -e "$TMUX_STUB_ALIVE" ]] ;;
   new-session)  touch "$TMUX_STUB_ALIVE" ;;
   kill-session) rm -f "$TMUX_STUB_ALIVE" ;;
-  load-buffer)  cat > /dev/null ;;
+  load-buffer)  cat > "$TMUX_STUB_BUFFER" ;;
+  paste-buffer)
+    if [[ -z "${TMUX_STUB_DROP_PASTE:-}" && -e "${TMUX_STUB_BUFFER:-/nonexistent}" ]]; then
+      printf '❯ %s\n' "$(cat "$TMUX_STUB_BUFFER")" > "$TMUX_STUB_SCREEN"
+    fi
+    ;;
   capture-pane)
     cat "$TMUX_STUB_SCREEN" 2>/dev/null
     # Optional one-shot screen transition after a look (simulates a worker
@@ -45,6 +55,10 @@ case "$1" in
   send-keys)
     if [[ -n "${TMUX_STUB_NEXT_SCREEN:-}" && -e "${TMUX_STUB_NEXT_SCREEN:-}" ]]; then
       mv "$TMUX_STUB_NEXT_SCREEN" "$TMUX_STUB_SCREEN"
+    elif [[ "$*" == *" -l "* ]]; then
+      printf '❯ %s\n' "${*#*-l }" > "$TMUX_STUB_SCREEN"
+    elif [[ "$*" == *Enter* && -z "${TMUX_STUB_STICKY:-}" ]]; then
+      printf '❯ \n' > "$TMUX_STUB_SCREEN"
     fi
     ;;
 esac
@@ -60,7 +74,7 @@ printf '> idle\n❯ \n' > "$base/screen"
 run() {
   TMUX_STUB_LOG="$tmux_log" TMUX_STUB_ALIVE="$base/alive" \
     TMUX_STUB_SCREEN="$base/screen" TMUX_STUB_NEXT_SCREEN="$base/next-screen" \
-    TMUX_STUB_SCREEN_AFTER_READ="$base/screen-after" \
+    TMUX_STUB_SCREEN_AFTER_READ="$base/screen-after" TMUX_STUB_BUFFER="$base/buffer" \
     CLAUDE_WORKERS_STATE="$state" CLAUDE_WORKER_SEND_DELAY=0 \
     CLAUDE_WORKER_POLL=0 CLAUDE_WORKER_START_TIMEOUT=3 \
     PATH="$stub:$PATH" "$ROOT/hosts/wsl-desktop/bin/claude-worker" "$@"
@@ -99,13 +113,26 @@ paste_line="$(grep -n -- 'paste-buffer' "$tmux_log" | head -1 | cut -d: -f1)"
 enter_line="$(grep -n -- 'send-keys' "$tmux_log" | head -1 | cut -d: -f1)"
 [[ "$paste_line" -lt "$enter_line" ]] || fail "Enter sent before paste"
 
-# A message stuck in the input box (last ❯ line still shows it) is retried
-# with more Enters, then reported as a failure instead of silently dropped.
-printf '❯ do the thing\n' > "$base/screen"
+# A message stuck in the input box (last ❯ line still shows it after Enter)
+# is retried with more Enters, then reported as a failure instead of silently
+# dropped. TMUX_STUB_STICKY makes Enter a no-op (swallowed keys).
 : > "$tmux_log"
+export TMUX_STUB_STICKY=1
 run send impl "do the thing" >/dev/null 2>&1 && fail "stuck send unexpectedly reported success"
+unset TMUX_STUB_STICKY
 [[ "$(grep -c -- "send-keys -t =cw-impl: Enter" "$tmux_log")" -ge 4 ]] \
   || fail "stuck send did not retry Enter: $(cat "$tmux_log")"
+printf '> idle\n❯ \n' > "$base/screen"
+
+# The bug this fixes: a booting/compacting TUI silently drops the paste, so the
+# probe never reaches the input box. cmd_send must report failure, NOT treat an
+# empty/absent prompt as a successful submit.
+printf 'Compacting conversation…\n' > "$base/screen"
+: > "$tmux_log"
+export TMUX_STUB_DROP_PASTE=1
+run send impl "lost message" >/dev/null 2>&1 && fail "send into a dropped paste falsely reported success"
+unset TMUX_STUB_DROP_PASTE
+grep -q -- "send-keys -t =cw-impl: Enter" "$tmux_log" && fail "send pressed Enter before confirming the paste landed"
 printf '> idle\n❯ \n' > "$base/screen"
 
 # --- send --type sends literal keystrokes (slash commands), no paste ------------
@@ -165,6 +192,13 @@ printf 'working on it\nesc to interrupt\n❯ \n' > "$base/screen-after"
 rc=0
 run wait impl --for MARKER --timeout 1 >/dev/null 2>&1 || rc=$?
 [[ "$rc" -eq 2 ]] || fail "wait --for fell for the just-sent idle window (got $rc)"
+
+# Resume-time auto-compaction ("Compacting") counts as busy, so readiness
+# waits it out even though the input prompt is on screen.
+printf 'Compacting conversation…\n❯ \n' > "$base/screen"
+rc=0
+run wait impl --timeout 1 >/dev/null 2>&1 || rc=$?
+[[ "$rc" -eq 2 ]] || fail "wait did not treat compaction as busy (got $rc)"
 printf '> done\n❯ \n' > "$base/screen"
 
 # --- start --chat records the originating thread; restart preserves it ----------
