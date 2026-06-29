@@ -132,6 +132,15 @@ r = b._run(["definitely-not-a-real-command-xyz"])
 assert r.returncode == 127, "missing command did not yield rc 127"
 assert "definitely-not-a-real-command-xyz" in r.stderr, "missing-command error lost"
 
+# --- readiness gating (don't paste the waking message into a loading TUI) -------------
+assert b.screen_is_ready("> done\n❯ \n"), "idle prompt should be ready"
+assert not b.screen_is_ready("loading...\n"), "no prompt is not ready"
+assert not b.screen_is_ready("working\nesc to interrupt\n❯ \n"), "busy turn is not ready"
+assert not b.screen_is_ready("Compacting conversation…\n❯ \n"), "compaction is not ready"
+assert not b.screen_is_ready(
+    "Do you trust the files in this folder?\n❯ 1. Yes\n"
+), "trust dialog is not ready"
+
 # --- chat target parsing --------------------------------------------------------------
 assert b.channel_from_chat("discord:123") == 123
 assert b.channel_from_chat("discord:123:456") == 123
