@@ -216,6 +216,15 @@ printf '> booted\n❯ \n' > "$base/next-screen"
 out="$(run start trusty --dir "$proj")" || fail "start with trust dialog failed: $out"
 grep -q "state:  ready" <<<"$out" || fail "trust dialog was not auto-accepted: $out"
 
+# --- start auto-dismisses the resume-mode dialog (large --continue) --------------
+# Its menu cursor is also a "❯", so readiness must not mistake it for the idle
+# prompt; start picks the highlighted "Resume from summary" default and waits.
+rm -f "$base/alive"
+printf '❯ 1. Resume from summary (recommended)\n  2. Resume full session as-is\n' > "$base/screen"
+printf '> resumed\n❯ \n' > "$base/next-screen"
+out="$(run start resumer --dir "$proj")" || fail "start with resume dialog failed: $out"
+grep -q "state:  ready" <<<"$out" || fail "resume dialog was not auto-dismissed: $out"
+
 # --- commands on unknown/stopped workers fail cleanly ---------------------------
 rm -f "$base/alive"
 run send nosuch hi >/dev/null 2>&1 && fail "send to unknown worker unexpectedly succeeded"
