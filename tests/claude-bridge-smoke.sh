@@ -140,6 +140,9 @@ assert not b.screen_is_ready("Compacting conversation…\n❯ \n"), "compaction 
 assert not b.screen_is_ready(
     "Do you trust the files in this folder?\n❯ 1. Yes\n"
 ), "trust dialog is not ready"
+assert not b.screen_is_ready(
+    "❯ 1. Resume from summary (recommended)\n  2. Resume full session as-is\n"
+), "resume-mode dialog is not ready"
 
 # --- chat target parsing --------------------------------------------------------------
 assert b.channel_from_chat("discord:123") == 123
