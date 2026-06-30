@@ -100,7 +100,8 @@ provider billing, anywhere.
   `TodoWrite|TaskCreate|TaskUpdate`; posts the live checklist to the repo
   channel via the bridge (webhook fallback to the main channel).
 - **`discord-notify`** — one-shot message from any shell/Claude session;
-  workers default to their own repo channel.
+  workers default to their own repo channel. `-i <file>` attaches images/files
+  (repeatable); `--help` prints usage without sending.
 - **`claude-launch`** (shared, all hosts) — interactive remote-control
   launcher behind `cl` and all workers; strips `ANTHROPIC_API_KEY`/Bedrock/
   Vertex variables so nothing can push a session onto API billing.
