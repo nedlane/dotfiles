@@ -81,6 +81,39 @@ grep -q "worker:plain" "$log" || fail "chatless worker tag missing: $(cat "$log"
 printf 'line1\nline2\n' | run -- - || fail "stdin send failed"
 grep -q "line1" "$log" || fail "stdin body missing: $(cat "$log")"
 
+# --- --help prints usage and sends NOTHING (agents spam Discord otherwise) ----------
+: > "$log"
+out="$(run -- --help 2>&1)" || fail "--help should exit 0: $out"
+grep -q "Usage:" <<<"$out" || fail "--help did not print usage: $out"
+grep -q "\-i, --image" <<<"$out" || fail "--help did not document attachments: $out"
+[[ -s "$log" ]] && fail "--help sent something to Discord: $(cat "$log")"
+
+# --- attachments: a chat-bound worker rides the file path in the bridge event -------
+img="$base/chart.png"
+printf 'PNGDATA' > "$img"
+: > "$log"
+run CLAUDE_WORKER=impl -- -i "$img" "coverage chart" || fail "worker image send failed"
+grep -q "claude.worker.send" "$log" || fail "image: no bridge event: $(cat "$log")"
+grep -q '"attachments"' "$log" || fail "image: event missing attachments: $(cat "$log")"
+grep -q "$img" "$log" || fail "image: attachment path not in event: $(cat "$log")"
+grep -q "discord.example" "$log" && fail "image: chat-bound send fell back to webhook"
+
+# --- attachments via the webhook fallback go up as a multipart upload ---------------
+: > "$log"
+run -- -i "$img" "no worker, main channel" || fail "webhook image send failed"
+grep -q "files\[0\]=@$img" "$log" || fail "image: not uploaded as multipart: $(cat "$log")"
+grep -q "payload_json=" "$log" || fail "image: caption payload missing: $(cat "$log")"
+
+# --- an attachment with no message is allowed -----------------------------------------
+: > "$log"
+run -- -i "$img" || fail "image-only send (no message) failed"
+grep -q "files\[0\]=@$img" "$log" || fail "image-only: not uploaded: $(cat "$log")"
+
+# --- a missing attachment is a clear error, and nothing is sent -----------------------
+: > "$log"
+run -- -i "$base/nope.png" "ghost" >/dev/null 2>&1 && fail "missing attachment unexpectedly succeeded"
+[[ -s "$log" ]] && fail "missing attachment still posted: $(cat "$log")"
+
 # --- no transport at all: clear error, non-zero exit ---------------------------------
 rm "$webhook_file" "$bridge_cfg"
 run -- "nowhere to go" >/dev/null 2>&1 && fail "send with no transport unexpectedly succeeded"
