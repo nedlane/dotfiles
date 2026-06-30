@@ -144,6 +144,15 @@ assert not b.screen_is_ready(
     "❯ 1. Resume from summary (recommended)\n  2. Resume full session as-is\n"
 ), "resume-mode dialog is not ready"
 
+# --- inbound tagging (remind workers to reply on Discord) -----------------------------
+tagged = b.tag_inbound("ship it", typed=False)
+assert tagged.endswith("\n\nship it"), f"message body lost: {tagged!r}"
+assert "discord-notify" in tagged, "tag does not mention discord-notify"
+assert b.DISCORD_TAG in tagged, "tag constant not applied"
+assert b.tag_inbound("/compact", typed=True) == "/compact", "slash command must pass through untouched"
+assert b.tag_inbound("", typed=False) == "", "empty body should not be tagged"
+assert b.tag_inbound("   ", typed=False) == "   ", "whitespace-only body should not be tagged"
+
 # --- chat target parsing --------------------------------------------------------------
 assert b.channel_from_chat("discord:123") == 123
 assert b.channel_from_chat("discord:123:456") == 123
