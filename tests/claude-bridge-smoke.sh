@@ -2,9 +2,10 @@
 set -euo pipefail
 
 # Verifies claude-bridge's pure helpers (hosts/wsl-desktop/bin/claude-bridge)
-# with plain python3 — no discord.py, no network, nothing launched: command
-# parsing, Discord message splitting, transcript reply extraction, HMAC
-# verification, config round-trips, and chat-target parsing.
+# with plain python3 — no discord.py, no network, nothing launched: Discord
+# message splitting, transcript reply extraction, HMAC verification, config
+# round-trips, the fresh-start markers, and chat-target parsing. (The slash
+# commands themselves are discord.py interactions, exercised live.)
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -23,13 +24,6 @@ spec.loader.exec_module(b)
 def fail(msg):
     print(f"claude-bridge smoke test failed: {msg}", file=sys.stderr)
     sys.exit(1)
-
-# --- command parsing ---------------------------------------------------------
-assert b.parse_command("!addrepo ghpr ~/projects/ghpr") == ("addrepo", ["ghpr", "~/projects/ghpr"]), "addrepo parse"
-assert b.parse_command("!STATUS") == ("status", []), "case-insensitive command"
-assert b.parse_command("hello world") is None, "plain text is not a command"
-assert b.parse_command("!!") is None, "garbage bang is not a command"
-assert b.parse_command("") is None, "empty text"
 
 # --- message splitting ---------------------------------------------------------
 short = b.split_message("hello\nworld")
