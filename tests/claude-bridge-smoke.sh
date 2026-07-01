@@ -188,6 +188,16 @@ assert b.reply_preview("   ") is None, "whitespace preview is None"
 long_prev = b.reply_preview("x" * 250)
 assert long_prev.endswith("…") and len(long_prev) == 201, "preview not capped at 200+ellipsis"
 
+# --- channel-purge confirmation suffix (/clear, /fresh cleanup) -----------------------
+assert b.purge_suffix(0) == "", "clean run, nothing deleted -> no suffix"
+assert b.purge_suffix(1) == " — cleared 1 message", "singular deleted count"
+assert b.purge_suffix(5) == " — cleared 5 messages", "plural deleted count"
+sfx = b.purge_suffix(0, "bot needs the **Manage Messages** permission to clean up")
+assert sfx.startswith(" — couldn't clear the channel:"), f"blocker with 0 deleted: {sfx!r}"
+assert "Manage Messages" in sfx, "blocker note lost"
+sfx2 = b.purge_suffix(3, "some messages couldn't be deleted")
+assert "cleared 3 messages, but some messages" in sfx2, f"partial-fail wording: {sfx2!r}"
+
 # --- chat target parsing --------------------------------------------------------------
 assert b.channel_from_chat("discord:123") == 123
 assert b.channel_from_chat("discord:123:456") == 123
