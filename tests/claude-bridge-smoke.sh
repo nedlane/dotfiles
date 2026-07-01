@@ -153,6 +153,27 @@ assert b.tag_inbound("/compact", typed=True) == "/compact", "slash command must 
 assert b.tag_inbound("", typed=False) == "", "empty body should not be tagged"
 assert b.tag_inbound("   ", typed=False) == "   ", "whitespace-only body should not be tagged"
 
+# --- inbound composition: reply quote + text + attachment footer ----------------------
+assert b.compose_inbound("hi", None, None) == "hi", "plain text should pass through"
+ci = b.compose_inbound("look at this", ["/inbox/1-a.png"], None)
+assert "look at this" in ci and "/inbox/1-a.png" in ci, "attachment path/text lost"
+assert "attached 1 file" in ci, "singular attachment wording"
+ci2 = b.compose_inbound("", ["/x/a", "/x/b"], None)
+assert "attached 2 files" in ci2 and "/x/a" in ci2 and "/x/b" in ci2, "multi-attachment footer"
+ci3 = b.compose_inbound("do it", None, "the earlier question")
+assert ci3.startswith("(replying to: the earlier question)"), "reply quote must lead"
+assert "do it" in ci3, "reply body lost"
+assert b.compose_inbound("", None, None) == "", "nothing in, nothing out"
+
+# --- edit framing + reply preview -----------------------------------------------------
+assert b.compose_edit("new text").endswith("\n\nnew text"), "edit body lost"
+assert "edited" in b.compose_edit("x"), "edit note doesn't say edited"
+assert b.reply_preview("  hello\nworld  ") == "hello world", "preview should trim + flatten"
+assert b.reply_preview("") is None, "empty preview is None"
+assert b.reply_preview("   ") is None, "whitespace preview is None"
+long_prev = b.reply_preview("x" * 250)
+assert long_prev.endswith("…") and len(long_prev) == 201, "preview not capped at 200+ellipsis"
+
 # --- chat target parsing --------------------------------------------------------------
 assert b.channel_from_chat("discord:123") == 123
 assert b.channel_from_chat("discord:123:456") == 123

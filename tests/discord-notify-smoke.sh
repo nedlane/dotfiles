@@ -33,6 +33,10 @@ printf 'name=impl\nchat=discord:111:222\n' > "$state/impl/meta"
 cat > "$stub/curl" <<'STUB'
 #!/usr/bin/env bash
 echo "curl $*" >> "$LOG"
+# Simulate an unreachable endpoint: fail when the args contain CURL_FAIL_MATCH.
+if [[ -n "${CURL_FAIL_MATCH:-}" && "$*" == *"$CURL_FAIL_MATCH"* ]]; then
+  exit 7
+fi
 STUB
 chmod +x "$stub/curl"
 
@@ -113,6 +117,32 @@ grep -q "files\[0\]=@$img" "$log" || fail "image-only: not uploaded: $(cat "$log
 : > "$log"
 run -- -i "$base/nope.png" "ghost" >/dev/null 2>&1 && fail "missing attachment unexpectedly succeeded"
 [[ -s "$log" ]] && fail "missing attachment still posted: $(cat "$log")"
+
+# --- an oversized attachment is rejected before any upload ----------------------------
+: > "$log"
+run DISCORD_NOTIFY_MAX_BYTES=3 -- -i "$img" "too big" >/dev/null 2>&1 && fail "oversized attachment not rejected"
+[[ -s "$log" ]] && fail "oversized attachment still posted: $(cat "$log")"
+
+# --- bridge unreachable for a chat target: warn + fall back, never silently misroute ---
+: > "$log"
+out="$(run CURL_FAIL_MATCH=8765 CLAUDE_WORKER=impl -- "reply text" 2>&1)" || fail "misroute fallback should still deliver: $out"
+grep -q "discord.example" "$log" || fail "misroute did not fall back to the webhook: $(cat "$log")"
+grep -q "bridge unreachable" "$log" || fail "misroute warning missing: $(cat "$log")"
+grep -q "discord:111:222" "$log" || fail "misroute warning did not name the intended target: $(cat "$log")"
+
+# --- a long body is split into multiple <=2000-char webhook posts ----------------------
+long="$(printf 'A%.0s' {1..2500})"
+: > "$log"
+run -- "$long" || fail "long message send failed"
+posts="$(grep -c '^curl ' "$log")"
+(( posts >= 2 )) || fail "long message not split into multiple posts (got $posts): $(cat "$log")"
+
+# --- a long caption with an attachment: leading text posts, files ride the last chunk --
+: > "$log"
+run -- -i "$img" "$long" || fail "long caption + image failed"
+grep -q "files\[0\]=@$img" "$log" || fail "image not uploaded with long caption: $(cat "$log")"
+posts="$(grep -c '^curl ' "$log")"
+(( posts >= 2 )) || fail "long caption not split before the upload (got $posts): $(cat "$log")"
 
 # --- no transport at all: clear error, non-zero exit ---------------------------------
 rm "$webhook_file" "$bridge_cfg"
