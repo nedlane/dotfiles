@@ -94,11 +94,13 @@ Windows peers and offline peers are excluded.
 
 ## Agent Control Plane (desktop only)
 
-`hosts/wsl-desktop/bin/` carries a Discord remote control for interactive
-Claude Code: `claude-bridge` maps repo channels to persistent tmux workers
-(`claude-worker`), with hook-driven reply/checklist relays and a readiness
-check (`agent-checkup`). No LLM in the routing path. The shared
-`claude-launch` backs the `cl` shorthand on every host.
+The [`agent-bridge`](https://github.com/nedlane/agent-bridge) submodule (at
+`hosts/wsl-desktop/agent-bridge/`) carries a Discord remote control for
+interactive Claude Code: `claude-bridge` maps repo channels to persistent tmux
+workers (`claude-worker`), with hook-driven reply/checklist relays and a
+readiness check (`agent-checkup`). No LLM in the routing path. The shared
+`claude-launch` backs the `cl` shorthand on every host. Run
+`git submodule update --init` after cloning to populate it.
 See [docs/agent-control-plane.md](docs/agent-control-plane.md).
 
 ## Layout
@@ -117,6 +119,7 @@ shared/
 hosts/
   mac/                       macOS shell, tmux, Alacritty, and helper commands
   wsl-desktop/               WSL2 shell and tmux overlay
+    agent-bridge/            Discord↔worker control plane (git submodule)
   minipc/                    homelab overlays
   minipc2/
   pi/

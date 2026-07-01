@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Verifies the claude-worker lifecycle manager (hosts/wsl-desktop/bin/
+# Verifies the claude-worker lifecycle manager (hosts/wsl-desktop/agent-bridge/bin/
 # claude-worker) against a stubbed tmux: session naming (cw-<name>), worker
 # title labels
 # (worker:<name>), state/meta recording, send/read/stop/restart command
@@ -91,7 +91,7 @@ run() {
     TMUX_STUB_PASTE_N="$base/paste-n" \
     CLAUDE_WORKERS_STATE="$state" CLAUDE_WORKER_SEND_DELAY=0 \
     CLAUDE_WORKER_POLL=0 CLAUDE_WORKER_START_TIMEOUT=3 \
-    PATH="$stub:$PATH" "$ROOT/hosts/wsl-desktop/bin/claude-worker" "$@"
+    PATH="$stub:$PATH" "$ROOT/hosts/wsl-desktop/agent-bridge/bin/claude-worker" "$@"
 }
 
 # --- start: tmux session, worker label, pipe-pane log, meta, blocks to ready --

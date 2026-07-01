@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Verifies the Discord todo relay (hosts/wsl-desktop/bin/claude-worker-todo-relay),
+# Verifies the Discord todo relay (hosts/wsl-desktop/agent-bridge/bin/claude-worker-todo-relay),
 # a Claude Code PostToolUse hook for TodoWrite: it formats a worker's live task
 # checklist and posts it to a Discord webhook with no model/token usage.
 # Checks: posting, worker-only filtering, dedupe, graceful no-webhook exit,
 # and that the webhook URL never leaks to stdout/stderr.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-RELAY="$ROOT/hosts/wsl-desktop/bin/claude-worker-todo-relay"
+RELAY="$ROOT/hosts/wsl-desktop/agent-bridge/bin/claude-worker-todo-relay"
 
 fail() {
   echo "claude-worker-todo-relay smoke test failed: $*" >&2

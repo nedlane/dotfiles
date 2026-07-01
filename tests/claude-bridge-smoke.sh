@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Verifies claude-bridge's pure helpers (hosts/wsl-desktop/bin/claude-bridge)
+# Verifies claude-bridge's pure helpers (hosts/wsl-desktop/agent-bridge/bin/claude-bridge)
 # with plain python3 — no discord.py, no network, nothing launched: Discord
 # message splitting, transcript reply extraction, HMAC verification, config
 # round-trips, the fresh-start markers, and chat-target parsing. (The slash
@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # PYTHONDONTWRITEBYTECODE: importing the script must not drop a __pycache__
 # into hosts/wsl-desktop/bin (repository-smoke checks executability there).
-BRIDGE="$ROOT/hosts/wsl-desktop/bin/claude-bridge" PYTHONDONTWRITEBYTECODE=1 python3 - <<'PY'
+BRIDGE="$ROOT/hosts/wsl-desktop/agent-bridge/bin/claude-bridge" PYTHONDONTWRITEBYTECODE=1 python3 - <<'PY'
 import hashlib, hmac, importlib.util, json, os, sys, tempfile
 
 spec = importlib.util.spec_from_file_location(
