@@ -70,15 +70,15 @@ grep -q "discord:111" <<<"$out" || fail "repos missing channel id: $out"
 
 # --- addguest posts a signed guest-grant event (edit/view access) --------------------
 : > "$log"
-out="$(run addguest ghpr 656356624965042180 view)" || fail "addguest failed: $out"
+out="$(run addguest ghpr 100000000000000001 view)" || fail "addguest failed: $out"
 grep -q "claude.bridge.addguest" "$log" || fail "no addguest event: $(cat "$log")"
 grep -q '"name": "ghpr"' "$log" || fail "name missing from addguest: $(cat "$log")"
-grep -q '"discord_id": "656356624965042180"' "$log" || fail "id missing from addguest: $(cat "$log")"
+grep -q '"discord_id": "100000000000000001"' "$log" || fail "id missing from addguest: $(cat "$log")"
 grep -q '"access": "view"' "$log" || fail "access missing from addguest: $(cat "$log")"
 
 # --- addguest defaults to edit access ------------------------------------------------
 : > "$log"
-run addguest ghpr 656356624965042180 >/dev/null || fail "addguest default-access failed"
+run addguest ghpr 100000000000000001 >/dev/null || fail "addguest default-access failed"
 grep -q '"access": "edit"' "$log" || fail "addguest did not default to edit: $(cat "$log")"
 
 # --- addguest rejects bad input before any network call ------------------------------
@@ -94,7 +94,7 @@ run addguest ghpr >/dev/null 2>&1 && fail "addguest without an id accepted"
 
 # --- request files an approval event -------------------------------------------------
 : > "$log"
-run request 656356624965042180 photo-pipeline "wants to help" >/dev/null || fail "request failed"
+run request 100000000000000001 photo-pipeline "wants to help" >/dev/null || fail "request failed"
 grep -q "claude.bridge.request" "$log" || fail "no request event: $(cat "$log")"
 grep -q '"project": "photo-pipeline"' "$log" || fail "project missing from request: $(cat "$log")"
 : > "$log"
@@ -112,9 +112,9 @@ grep -q '"all": true' "$log" || fail "viewonly --all flag missing: $(cat "$log")
 
 # --- revoke posts a signed event -----------------------------------------------------
 : > "$log"
-run revoke ghpr 656356624965042180 >/dev/null || fail "revoke failed"
+run revoke ghpr 100000000000000001 >/dev/null || fail "revoke failed"
 grep -q '"claude.bridge.revoke"' "$log" || fail "no revoke event: $(cat "$log")"
-grep -q '"discord_id": "656356624965042180"' "$log" || fail "revoke id missing: $(cat "$log")"
+grep -q '"discord_id": "100000000000000001"' "$log" || fail "revoke id missing: $(cat "$log")"
 
 # --- guests lists channels with edit/view access -------------------------------------
 gcfg="$base/config-guests.json"

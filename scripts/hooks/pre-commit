@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Opt-in pre-commit secret scan — catches a pasted token BEFORE it leaves the
+# machine (CI's gitleaks runs only after the push to the public remote).
+#
+# Enable it with:
+#   git config core.hooksPath scripts/hooks
+# Disable for one commit with `git commit --no-verify`.
+#
+# It scans only the staged diff and no-ops (with a hint) when gitleaks isn't
+# installed, so it never blocks a commit spuriously.
+set -euo pipefail
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks not installed — skipping secret scan." >&2
+  echo "            install it (https://github.com/gitleaks/gitleaks) for local protection." >&2
+  exit 0
+fi
+
+if ! gitleaks protect --staged --redact --no-banner; then
+  echo >&2
+  echo "pre-commit: gitleaks flagged a potential secret in the staged changes." >&2
+  echo "            review above; if it's a known false positive, allowlist it in" >&2
+  echo "            .gitleaks.toml or commit with --no-verify." >&2
+  exit 1
+fi

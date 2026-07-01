@@ -2,7 +2,7 @@
 # Launch an interactive Claude Code remote-control session with a stable,
 # device-identifying title. Standalone equivalent of the `cl` zsh function
 # (shared/zsh/aliases.zsh delegates here), so it works from bash, cron, tmux,
-# SSH, Codex tools, and other non-interactive callers without sourcing zsh.
+# SSH, and other non-interactive callers without sourcing zsh.
 #
 #   claude-launch                  # title "<host> / <cwd basename>"
 #   claude-launch --label NAME     # title "<host> / NAME" (worker sessions)

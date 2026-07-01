@@ -217,6 +217,15 @@ esac
 
 install_shell_tools
 
+# The desktop control plane lives in the private agent-bridge submodule; link.sh
+# skips its tools when it isn't checked out. Best-effort populate it so the
+# owner's wsl-desktop box gets the full plane; a plain clone (no access) just
+# carries on without it.
+if [[ "$host" == wsl-desktop ]]; then
+  git -C "$DIR" submodule update --init hosts/wsl-desktop/agent-bridge 2>/dev/null \
+    || echo "note: agent-bridge submodule unavailable — control plane will be skipped"
+fi
+
 echo "== link dotfiles =="
 "$DIR/scripts/link.sh" "$host"
 install_tmux_plugins

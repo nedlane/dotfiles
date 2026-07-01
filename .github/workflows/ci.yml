@@ -53,7 +53,7 @@ jobs:
 
       - name: Run ShellCheck
         run: |
-          shellcheck scripts/*.sh scripts/lib/*.sh tests/*.sh
+          shellcheck scripts/*.sh scripts/lib/*.sh scripts/hooks/* tests/*.sh
           # shared/bin mixes zsh (tmux-switch) and POSIX-sh tools; shellcheck
           # only parses sh/bash, so skip the rest by shebang. The agent-bridge
           # control-plane tools are shellchecked in that submodule's own CI.
@@ -175,7 +175,9 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Install actionlint
-        run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+        # Pinned to the v1.7.7 commit (mutable tags can move); matches the
+        # SHA-pinning used for every `uses:` action in this workflow.
+        run: go install github.com/rhysd/actionlint/cmd/actionlint@03d0035246f3e81f36aed592ffb4bebf33a03106 # v1.7.7
 
       - name: Validate workflows
         run: ~/go/bin/actionlint

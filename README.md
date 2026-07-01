@@ -75,6 +75,13 @@ ${EDITOR:-vi} ~/.config/dotfiles/gitconfig.local
 This file is outside the repository and should contain your name, email, and
 signing-key path.
 
+Optionally enable a local pre-commit secret scan (catches a pasted token before
+it ever leaves your machine; requires [gitleaks](https://github.com/gitleaks/gitleaks)):
+
+```sh
+git config core.hooksPath scripts/hooks
+```
+
 ## tmux Session Switcher
 
 Inside tmux, `<prefix> w` opens an fzf menu containing local sessions and
@@ -94,14 +101,22 @@ Windows peers and offline peers are excluded.
 
 ## Agent Control Plane (desktop only)
 
-The [`agent-bridge`](https://github.com/nedlane/agent-bridge) submodule (at
-`hosts/wsl-desktop/agent-bridge/`) carries a Discord remote control for
-interactive Claude Code: `claude-bridge` maps repo channels to persistent tmux
-workers (`claude-worker`), with hook-driven reply/checklist relays and a
-readiness check (`agent-checkup`). No LLM in the routing path. The shared
-`claude-launch` backs the `cl` shorthand on every host. Run
-`git submodule update --init` after cloning to populate it.
-See [docs/agent-control-plane.md](docs/agent-control-plane.md).
+The `agent-bridge` submodule (at `hosts/wsl-desktop/agent-bridge/`) carries a
+Discord remote control for interactive Claude Code: `claude-bridge` maps repo
+channels to persistent tmux workers (`claude-worker`), with hook-driven
+reply/checklist relays and a readiness check (`agent-checkup`). No LLM in the
+routing path. The shared `claude-launch` backs the `cl` shorthand on every host.
+
+This is a **private, desktop-only personal component** — the submodule points at
+a private repo, so a plain clone won't fetch it and nothing here depends on it.
+`link.sh` and `setup.sh` skip it cleanly when it's absent; only the owner's
+`wsl-desktop` box populates it. See
+[docs/agent-control-plane.md](docs/agent-control-plane.md) for the design.
+
+> **Heads up:** the `cl` shorthand launches Claude Code with
+> `--dangerously-skip-permissions` by default (full-trust, frictionless). If you
+> adopt these dotfiles, know that `cl` bypasses Claude Code's permission prompts
+> unless you change `shared/bin/claude-launch`.
 
 ## Layout
 
