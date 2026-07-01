@@ -117,6 +117,26 @@ assert "--continue" not in args, "fresh start should not --continue"
 args = b.start_args("ghpr", "/x", 123, resume=True)
 assert "--continue" in args and args.index("--continue") > args.index("--"), "resume flag misplaced"
 
+# --- !fresh: shut down + fresh next start (arm marker, one-shot, no resume) ------------
+assert b.should_resume(True, False) is True, "state, no fresh armed -> resume"
+assert b.should_resume(True, True) is False, "fresh armed -> must not resume"
+assert b.should_resume(False, False) is False, "no state -> nothing to resume"
+assert b.should_resume(False, True) is False, "no state, fresh armed -> fresh"
+with tempfile.TemporaryDirectory() as d:
+    assert not b.fresh_pending("w", d), "unarmed worker should not be pending"
+    b.disarm_fresh("w", d)  # idempotent even when nothing/no dir exists
+    b.arm_fresh("w", d)     # creates the worker dir if absent
+    assert b.fresh_pending("w", d), "arm_fresh did not arm"
+    assert os.path.isfile(os.path.join(d, "w", "no-resume")), "marker file missing"
+    # A stopped worker keeps state; the marker must coexist with meta.
+    open(os.path.join(d, "w", "meta"), "w").close()
+    assert b.should_resume(b.worker_has_state("w", d), b.fresh_pending("w", d)) is False, \
+        "armed fresh must override saved state"
+    b.disarm_fresh("w", d)
+    assert not b.fresh_pending("w", d), "disarm_fresh did not clear the marker"
+    assert b.should_resume(b.worker_has_state("w", d), b.fresh_pending("w", d)) is True, \
+        "after disarm, saved state should resume again"
+
 # --- the orchestrator worker gets the control-plane brief on top ------------------------
 assert b.system_prompt("ghpr") == b.PROTOCOL, "plain worker prompt should be PROTOCOL only"
 orch = b.system_prompt("orchestrator")
