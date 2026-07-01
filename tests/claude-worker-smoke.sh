@@ -74,9 +74,11 @@ case "$1" in
     ;;
 esac
 STUB
-# Stub claude so the launcher prerequisite check passes.
+# Stub claude and claude-launch so the launcher prerequisite checks pass
+# without a linked dotfiles tree (CI runs from a bare checkout, no PATH links).
 printf '#!/usr/bin/env bash\n' > "$stub/claude"
-chmod +x "$stub/tmux" "$stub/claude"
+printf '#!/usr/bin/env bash\n' > "$stub/claude-launch"
+chmod +x "$stub/tmux" "$stub/claude" "$stub/claude-launch"
 
 # Default screen: an idle Claude prompt (start/wait consider this ready).
 printf '> idle\n❯ \n' > "$base/screen"
