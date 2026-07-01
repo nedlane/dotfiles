@@ -67,7 +67,9 @@ provider billing, anywhere.
   Discord reply relays a quoted snippet of what it answered; editing a
   message relays the new text as a correction to the live worker.
 - **React 👀 to peek.** Reacting with 👀 on any message in a worker channel
-  posts that worker's live TUI screen — same as `!screen`, but no typing.
+  posts that worker's live TUI screen as an image (rendered by `term-shot`, so
+  it scales on mobile instead of scrolling a 180-column code block) — same as
+  `!screen`, but no typing.
 - Only allowlisted Discord user ids are honored.
 
 ## Tools
