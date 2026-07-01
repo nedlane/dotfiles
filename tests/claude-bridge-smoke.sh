@@ -222,14 +222,18 @@ assert b.channel_allows(gcfg, 999, 1), "owner allowed even in an unmapped channe
 assert b.profile_args("owner") == [], "owner profile adds no flags"
 assert b.profile_args(None) == [], "missing profile is owner"
 u = b.profile_args("utility", "/pdir")
+assert "--enforce-perms" in u, "utility must enforce permissions (not bypass)"
 assert "--tools" in u and u[u.index("--tools") + 1] == "", "utility must disable built-in tools"
 assert "--strict-mcp-config" in u, "utility must pin the MCP set"
 assert "/pdir/utility.mcp.json" in u, "utility must load its own mcp config"
 assert "--allowedTools" in u and any(x.startswith("mcp__") for x in u), "utility must pre-approve its MCP tools"
 assert "/pdir/utility.settings.json" in u, "utility must load its settings guardrails"
 c = b.profile_args("collab", "/pdir")
+assert "--enforce-perms" in c, "collab must enforce permissions (not bypass)"
 assert "--settings" in c and "/pdir/collab.settings.json" in c, "collab must load its deny-guardrail settings"
 assert "--tools" not in c, "collab keeps built-in dev tools"
+# owner keeps the frictionless default (no enforce flag)
+assert "--enforce-perms" not in b.profile_args("owner"), "owner stays on the fast path"
 
 # --- start_args threads the profile in AND still injects the Discord protocol ---------
 pa = b.start_args("cal", "/y", 200, resume=False, profile="utility")
@@ -247,6 +251,35 @@ with tempfile.TemporaryDirectory() as d:
     rc = b.load_config(path)
     assert rc["repos"]["200"]["guests"] == [2], "guests lost in round-trip"
     assert rc["repos"]["200"]["profile"] == "utility", "profile lost in round-trip"
+
+# --- the public #welcome channel is open to anyone in the gate ------------------------
+wcfg = {"allowed_users": [1], "welcome_channel": "500",
+        "repos": {"500": {"name": "welcome", "dir": "/w"}}}
+assert b.channel_allows(wcfg, 500, 999), "anyone may talk in #welcome"
+assert b.channel_allows(wcfg, 500, 1), "owner may talk in #welcome too"
+assert not b.channel_allows(wcfg, 501, 999), "a stranger stays blocked outside #welcome"
+
+# --- greeter profile: empty MCP set + its settings, keeps Bash for bridge-ctl ---------
+gp = b.profile_args("greeter", "/pdir")
+assert "--enforce-perms" in gp, "greeter must enforce permissions (a public worker must not bypass)"
+assert "--strict-mcp-config" in gp and "/pdir/greeter.mcp.json" in gp, "greeter must pin an empty MCP set"
+assert "/pdir/greeter.settings.json" in gp, "greeter must load its settings"
+assert "--tools" not in gp, "greeter keeps built-in tools (it runs bridge-ctl via Bash)"
+
+# --- the welcome worker gets the greeter brief, not the push-first protocol ------------
+assert b.system_prompt("welcome") == b.GREETER, "welcome worker must get the greeter brief"
+assert b.GREETER != b.PROTOCOL, "greeter brief must differ from the Ned protocol"
+assert "bridge-ctl request" in b.GREETER, "greeter brief missing the request command"
+wa = b.start_args("welcome", "/w", 500, resume=False, profile="greeter")
+assert "--strict-mcp-config" in wa and "--append-system-prompt" in wa, "welcome start lost flags/brief"
+
+# --- access-request card round-trips through its marker -------------------------------
+card = b.format_request_card(656, "photo-pipeline", "wants to help with exports")
+assert "photo-pipeline" in card and "<@656>" in card, "card missing project/mention"
+assert b.parse_request_marker(card) == (656, "photo-pipeline"), "marker did not round-trip"
+assert b.parse_request_marker("just a normal message") is None, "false-positive marker parse"
+# a resolved card (headline only, marker stripped) must not re-fire
+assert b.parse_request_marker(card.split("\n\n")[0]) is None, "resolved card should not parse"
 
 print("ok")
 PY

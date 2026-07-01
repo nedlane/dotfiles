@@ -142,3 +142,67 @@ The calendar agent itself needs a **Google Calendar MCP server + Ned's Google
 OAuth credentials** (his account, browser consent). The profile *machinery* is
 independent and testable without it; wiring the actual calendar MCP is the
 final step and requires Ned.
+
+---
+
+# Addendum (2026-07-02): public front door + view/edit access
+
+Follow-on to the above, built and shipped the same day.
+
+## #welcome — a public greeter
+
+A single public channel `#welcome` (the only place `@everyone` may View+Send)
+is mapped to a real Claude worker running the new **`greeter`** profile. It is
+NOT a push-first Ned worker: it gets the `GREETER` brief instead of `PROTOCOL`,
+converses in plain text (the Stop-hook relay posts its replies back), and its
+job is to find out which project a visitor wants and file a request.
+
+The greeter is tightly boxed: `greeter` profile = `--enforce-perms`
+(permissions actually enforced — see below), `--strict-mcp-config` with an
+empty `greeter.mcp.json` (no MCP), and `greeter.settings.json` that allows only
+`Bash(bridge-ctl repos)` and `Bash(bridge-ctl request:*)`. Anything else stalls
+on a permission prompt no visitor can answer. Its cwd is a throwaway
+`~/guest-workspaces/welcome`. Inbound messages in #welcome are tagged with the
+sender's name + Discord id so the greeter knows who to file for; a visitor's
+leading `/` is never treated as a Claude Code command.
+
+## Request → approval → grant
+
+1. Greeter runs `bridge-ctl request <discord_id> <project> "<summary>"` →
+   `claude.bridge.request` event.
+2. The bridge posts an **approval card** to the private `#requests` channel with
+   `👁️ view-only · ✏️ edit · ❌ deny` pre-added, embedding a
+   `req:<id>:<project>` marker so the decision survives a restart (state lives
+   in the message, not memory).
+3. Owner reacts: `on_raw_reaction_add` (owner-only) parses the marker and calls
+   `do_addguest(project, id, access)` — ✏️ → edit, 👁️ → view-only, ❌ →
+   decline. The card is edited to show the outcome and its reactions cleared so
+   it can't re-fire; the visitor is told the result back in #welcome.
+
+## Access levels (view vs edit) + lockdown
+
+Access is now a **per-member channel overwrite**, not a role: `edit` = View +
+Send (drives the collab worker), `view` = View, Send denied (watches only).
+Config tracks editors in `guests` and watchers in `viewers`, so the bridge gate
+and Discord agree. Instant lockdown:
+
+- `bridge-ctl viewonly <name>` / `viewonly --all` — drop editors to view-only.
+- `bridge-ctl revoke <name> <id>` — remove someone entirely.
+- `/lockdown` slash command — everyone everywhere to view-only, you untouched.
+
+## Permission enforcement fix (important)
+
+`claude-launch` launched every worker with `--dangerously-skip-permissions`,
+which silently ignores all settings-file allow/deny rules. That would have made
+the `greeter`/`collab` guardrails cosmetic. Fixed: `claude-launch` now takes
+`--enforce-perms` to omit the bypass flag, and every guest profile
+(`greeter`/`collab`/`utility`) passes it plus an explicit `--permission-mode`
+so allow-listed tools run without a prompt while everything else is denied.
+`owner` keeps the frictionless bypass.
+
+## Deferred
+
+Greeting on server-*join* needs the privileged **Server Members Intent**
+toggled in the Discord Developer Portal (flipping `intents.members` in code
+without it crashes the login). Until then the greeter greets on a visitor's
+first message. No code depends on the intent yet.

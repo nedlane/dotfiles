@@ -46,24 +46,29 @@ case "$host_id" in
   *)           host="$host_id" ;;
 esac
 
-# --- extract --label; detect explicit --name/-n ------------------------------
+# --- extract --label; detect explicit --name/-n; --enforce-perms opt-out ------
+# Workers run --dangerously-skip-permissions by default (frictionless, full
+# trust). Guest/greeter profiles pass --enforce-perms so their settings-file
+# allow/deny rules ACTUALLY apply — bypass would silently ignore them.
 label=""
 named=0
+skip="--dangerously-skip-permissions"
 args=()
 while (($#)); do
   case "$1" in
     --label)   label="${2:?claude-launch: --label needs a value}"; shift 2 ;;
     --label=*) label="${1#--label=}"; shift ;;
+    --enforce-perms) skip=""; shift ;;
     --name|--name=*|-n) named=1; args+=("$1"); shift ;;
     *) args+=("$1"); shift ;;
   esac
 done
 
 if (( named )); then
-  exec claude --dangerously-skip-permissions --remote-control \
+  exec claude ${skip:+$skip} --remote-control \
     ${args[@]+"${args[@]}"}
 fi
 
 title="${host:+$host / }${label:-$(basename "$PWD")}"
-exec claude --dangerously-skip-permissions --remote-control --name "$title" \
+exec claude ${skip:+$skip} --remote-control --name "$title" \
   ${args[@]+"${args[@]}"}
