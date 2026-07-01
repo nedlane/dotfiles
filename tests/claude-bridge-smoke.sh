@@ -205,6 +205,49 @@ assert b.channel_from_chat("discord") is None
 assert b.channel_from_chat("slack:99") is None
 assert b.channel_from_chat("") is None
 
+# --- per-channel guest authorization --------------------------------------------------
+gcfg = {"allowed_users": [1], "repos": {
+    "100": {"name": "orch", "dir": "/x"},                                    # owner-only
+    "200": {"name": "cal", "dir": "/y", "guests": [2], "profile": "utility"},
+}}
+assert b.channel_allows(gcfg, 100, 1), "owner should talk in any channel"
+assert b.channel_allows(gcfg, 200, 1), "owner should talk in a guest channel too"
+assert b.channel_allows(gcfg, 200, 2), "guest should talk in their own channel"
+assert not b.channel_allows(gcfg, 100, 2), "guest must NOT talk in another channel"
+assert not b.channel_allows(gcfg, 200, 3), "stranger blocked in a guest channel"
+assert not b.channel_allows(gcfg, 999, 2), "guest blocked in an unmapped channel"
+assert b.channel_allows(gcfg, 999, 1), "owner allowed even in an unmapped channel (caller no-ops without a repo)"
+
+# --- capability profiles -> claude launch flags ---------------------------------------
+assert b.profile_args("owner") == [], "owner profile adds no flags"
+assert b.profile_args(None) == [], "missing profile is owner"
+u = b.profile_args("utility", "/pdir")
+assert "--tools" in u and u[u.index("--tools") + 1] == "", "utility must disable built-in tools"
+assert "--strict-mcp-config" in u, "utility must pin the MCP set"
+assert "/pdir/utility.mcp.json" in u, "utility must load its own mcp config"
+assert "--allowedTools" in u and any(x.startswith("mcp__") for x in u), "utility must pre-approve its MCP tools"
+assert "/pdir/utility.settings.json" in u, "utility must load its settings guardrails"
+c = b.profile_args("collab", "/pdir")
+assert "--settings" in c and "/pdir/collab.settings.json" in c, "collab must load its deny-guardrail settings"
+assert "--tools" not in c, "collab keeps built-in dev tools"
+
+# --- start_args threads the profile in AND still injects the Discord protocol ---------
+pa = b.start_args("cal", "/y", 200, resume=False, profile="utility")
+assert "--tools" in pa and "--append-system-prompt" in pa, "profiled start lost flags or protocol"
+assert pa.index("--tools") > pa.index("--"), "profile flags must follow the -- separator"
+assert b.start_args("orch", "/x", 100, resume=False) == b.start_args("orch", "/x", 100, resume=False, profile="owner"), \
+    "default profile must equal owner (backward compatible)"
+
+# --- config round-trip preserves guests + profile -------------------------------------
+with tempfile.TemporaryDirectory() as d:
+    path = os.path.join(d, "config.json")
+    gc = b.load_config(path)
+    gc["repos"]["200"] = {"name": "cal", "dir": "/y", "guests": [2], "profile": "utility"}
+    b.save_config(gc, path)
+    rc = b.load_config(path)
+    assert rc["repos"]["200"]["guests"] == [2], "guests lost in round-trip"
+    assert rc["repos"]["200"]["profile"] == "utility", "profile lost in round-trip"
+
 print("ok")
 PY
 
