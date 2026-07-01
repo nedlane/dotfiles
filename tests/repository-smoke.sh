@@ -11,7 +11,12 @@ fail() {
 
 while IFS= read -r script; do
   [[ -x "$script" ]] || fail "$script is not executable"
-done < <(find scripts tests shared/bin hosts/mac/bin hosts/wsl-desktop/agent-bridge/bin \
+# The control-plane tools live in the agent-bridge submodule; include them only
+# when it's checked out (it may not be in CI while the repo is private — its own
+# CI checks their executability there).
+exec_dirs=(scripts tests shared/bin hosts/mac/bin)
+[ -d hosts/wsl-desktop/agent-bridge/bin ] && exec_dirs+=(hosts/wsl-desktop/agent-bridge/bin)
+done < <(find "${exec_dirs[@]}" \
   -name __pycache__ -prune -o \
   -type f \( -name '*.sh' -o -path 'shared/bin/*' -o -path 'hosts/mac/bin/*' -o -path 'hosts/wsl-desktop/agent-bridge/bin/*' \) -print | sort)
 

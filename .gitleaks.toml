@@ -1,0 +1,16 @@
+# gitleaks configuration for this repo.
+#
+# Keep the full upstream ruleset; only exempt known non-secrets. Discord
+# snowflake IDs (user/channel/guild ids) are NOT credentials — they are public
+# identifiers that grant nothing without the bot token, which is never
+# committed (it lives in a chmod-600 file under ~/.config). The ids below are
+# fixtures in the bridge smoke tests, so the `discord-client-id` rule flags
+# them as false positives.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Non-secret Discord snowflake ids used as smoke-test fixtures"
+regexes = [
+  '''222222222222222222''',
+]
