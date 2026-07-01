@@ -44,8 +44,13 @@ hook_input='{
 }'
 
 # run [extra env...] -> feeds the sample hook input to the relay.
+# -u strips any ambient CLAUDE_WORKER[_TODO_ALL] so the non-worker case is
+# genuinely non-worker even when the suite is run from inside a worker session
+# (where CLAUDE_WORKER is exported); a case that wants a worker re-sets it via
+# "$@".
 run() {
-  printf '%s' "$hook_input" | env CURL_LOG="$curl_log" PATH="$stub:$PATH" \
+  printf '%s' "$hook_input" | env -u CLAUDE_WORKER -u CLAUDE_WORKER_TODO_ALL \
+    CURL_LOG="$curl_log" PATH="$stub:$PATH" \
     CLAUDE_WORKERS_STATE="$state" \
     CLAUDE_WORKERS_DISCORD_WEBHOOK_FILE="$webhook_file" \
     "$@" "$RELAY"
@@ -83,7 +88,8 @@ printf '{"id":"2","subject":"Wire the relay","status":"in_progress"}\n' > "$task
 printf '{"id":"3","subject":"Old idea","status":"deleted"}\n' > "$tasks_dir/3.json"
 task_hook='{"session_id":"abc-123","cwd":"/home/u/projects/myproj","tool_name":"TaskUpdate","tool_input":{"taskId":"2","status":"in_progress"}}'
 : > "$curl_log"
-printf '%s' "$task_hook" | env CURL_LOG="$curl_log" PATH="$stub:$PATH" \
+printf '%s' "$task_hook" | env -u CLAUDE_WORKER -u CLAUDE_WORKER_TODO_ALL \
+  CURL_LOG="$curl_log" PATH="$stub:$PATH" \
   CLAUDE_WORKERS_STATE="$state" CLAUDE_TASKS_DIR="$tasks_dir" \
   CLAUDE_WORKERS_DISCORD_WEBHOOK_FILE="$webhook_file" CLAUDE_WORKER=impl \
   "$RELAY" || fail "relay failed on TaskUpdate hook"
