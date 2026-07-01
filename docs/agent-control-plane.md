@@ -48,7 +48,9 @@ provider billing, anywhere.
 - **Idle reaping + resume.** Workers idle longer than `idle_minutes`
   (default 45) are stopped. The next message revives the worker with
   `claude --continue`, restoring the conversation from Claude Code's own
-  session history — never hundreds of instances, never lost context.
+  session history — never hundreds of instances, never lost context. `!fresh`
+  arms the opposite: shut the worker down and have the next message start a
+  brand-new session (no `--continue`) instead of resuming.
 - **An orchestrator channel.** The worker named `orchestrator` (mapped like
   any repo, directory doesn't matter) gets an extra injected brief teaching
   it `bridge-ctl`/`claude-worker`/`agent-checkup`, so `#orchestrator` is a
@@ -76,9 +78,13 @@ provider billing, anywhere.
 
 - **`claude-bridge`** (desktop only) — the daemon. Discord commands
   (allowed users, any visible channel): `!status`, `!checkin [name]`,
-  `!model <model> [name]` (typed `/model`), `!clear [name]` (fresh context —
-  restarts the worker *without* `--continue`, the deterministic wipe),
-  `!compact [name]` (typed `/compact`), `!stop [name]`, `!restart [name]`,
+  `!model <model> [name]` (typed `/model`), `!clear [name]` (fresh context now
+  — restarts the worker *without* `--continue`, the deterministic wipe),
+  `!fresh [name]` (shut the worker down and arm a fresh next start — the next
+  message begins a brand-new session with no `--continue`, no resume-first; the
+  one-shot marker lives beside the worker's kept state and is consumed on that
+  next start), `!compact [name]` (typed `/compact`), `!stop [name]`,
+  `!restart [name]`,
   `!screen [name]`, `!addrepo <name> <path>` (creates `#<name>` under the
   Claude category and saves the mapping). Any message starting with `/` is
   typed into the worker as keystrokes, so every Claude Code slash command
