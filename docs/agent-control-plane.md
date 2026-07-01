@@ -60,7 +60,14 @@ provider billing, anywhere.
   input as steering); ⏳ marks delivered-while-busy, ✅ delivered-while-idle.
   Messages starting with `/` are sent as typed keystrokes so Claude Code
   slash commands execute. `!checkin` asks a running worker to post a 3-5
-  line progress update and keep going.
+  line progress update and keep going. Each relayed message is stamped with a
+  reminder to answer on Discord (the worker's terminal isn't visible to Ned).
+- **Rich inbound.** Attachments dropped into a channel are downloaded to the
+  worker's `inbox/` and their local paths handed to the worker to read; a
+  Discord reply relays a quoted snippet of what it answered; editing a
+  message relays the new text as a correction to the live worker.
+- **React 👀 to peek.** Reacting with 👀 on any message in a worker channel
+  posts that worker's live TUI screen — same as `!screen`, but no typing.
 - Only allowlisted Discord user ids are honored.
 
 ## Tools
