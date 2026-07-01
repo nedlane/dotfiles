@@ -68,42 +68,66 @@ out="$(run repos)" || fail "repos failed"
 grep -q "ghpr" <<<"$out" || fail "repos missing mapping: $out"
 grep -q "discord:111" <<<"$out" || fail "repos missing channel id: $out"
 
-# --- addguest posts a signed guest-grant event ---------------------------------------
+# --- addguest posts a signed guest-grant event (edit/view access) --------------------
 : > "$log"
-out="$(run addguest ghpr 656356624965042180 collab)" || fail "addguest failed: $out"
+out="$(run addguest ghpr 656356624965042180 view)" || fail "addguest failed: $out"
 grep -q "claude.bridge.addguest" "$log" || fail "no addguest event: $(cat "$log")"
 grep -q '"name": "ghpr"' "$log" || fail "name missing from addguest: $(cat "$log")"
 grep -q '"discord_id": "656356624965042180"' "$log" || fail "id missing from addguest: $(cat "$log")"
-grep -q '"profile": "collab"' "$log" || fail "profile missing from addguest: $(cat "$log")"
+grep -q '"access": "view"' "$log" || fail "access missing from addguest: $(cat "$log")"
 
-# --- addguest defaults to the utility profile ----------------------------------------
+# --- addguest defaults to edit access ------------------------------------------------
 : > "$log"
-run addguest ghpr 656356624965042180 >/dev/null || fail "addguest default-profile failed"
-grep -q '"profile": "utility"' "$log" || fail "addguest did not default to utility: $(cat "$log")"
+run addguest ghpr 656356624965042180 >/dev/null || fail "addguest default-access failed"
+grep -q '"access": "edit"' "$log" || fail "addguest did not default to edit: $(cat "$log")"
 
 # --- addguest rejects bad input before any network call ------------------------------
 : > "$log"
 run addguest ghpr not-a-number >/dev/null 2>&1 && fail "non-numeric discord_id accepted"
 [[ -s "$log" ]] && fail "bad discord_id still hit the network"
 : > "$log"
-run addguest ghpr 123 bogusprofile >/dev/null 2>&1 && fail "bad profile accepted"
-[[ -s "$log" ]] && fail "bad profile still hit the network"
+run addguest ghpr 123 bogusaccess >/dev/null 2>&1 && fail "bad access accepted"
+[[ -s "$log" ]] && fail "bad access still hit the network"
 : > "$log"
 run addguest ghpr >/dev/null 2>&1 && fail "addguest without an id accepted"
 [[ -s "$log" ]] && fail "incomplete addguest still hit the network"
 
-# --- guests lists channels that have guest access ------------------------------------
+# --- request files an approval event -------------------------------------------------
+: > "$log"
+run request 656356624965042180 photo-pipeline "wants to help" >/dev/null || fail "request failed"
+grep -q "claude.bridge.request" "$log" || fail "no request event: $(cat "$log")"
+grep -q '"project": "photo-pipeline"' "$log" || fail "project missing from request: $(cat "$log")"
+: > "$log"
+run request notanumber proj >/dev/null 2>&1 && fail "request bad id accepted"
+[[ -s "$log" ]] && fail "bad request still hit the network"
+
+# --- viewonly (one channel + --all) --------------------------------------------------
+: > "$log"
+run viewonly ghpr >/dev/null || fail "viewonly <name> failed"
+grep -q '"claude.bridge.viewonly"' "$log" || fail "no viewonly event: $(cat "$log")"
+grep -q '"name": "ghpr"' "$log" || fail "viewonly name missing: $(cat "$log")"
+: > "$log"
+run viewonly --all >/dev/null || fail "viewonly --all failed"
+grep -q '"all": true' "$log" || fail "viewonly --all flag missing: $(cat "$log")"
+
+# --- revoke posts a signed event -----------------------------------------------------
+: > "$log"
+run revoke ghpr 656356624965042180 >/dev/null || fail "revoke failed"
+grep -q '"claude.bridge.revoke"' "$log" || fail "no revoke event: $(cat "$log")"
+grep -q '"discord_id": "656356624965042180"' "$log" || fail "revoke id missing: $(cat "$log")"
+
+# --- guests lists channels with edit/view access -------------------------------------
 gcfg="$base/config-guests.json"
 cat > "$gcfg" <<'EOF'
-{"repos": {"111": {"name": "ghpr", "dir": "/d", "guests": [42], "profile": "collab"},
+{"repos": {"111": {"name": "ghpr", "dir": "/d", "guests": [42], "viewers": [7], "profile": "collab"},
            "222": {"name": "solo", "dir": "/e"}}}
 EOF
 out="$(env PATH="$stub:/usr/bin:/bin" \
   CLAUDE_WORKERS_BRIDGE_WEBHOOK_FILE="$base/bridge-webhook" \
   CLAUDE_BRIDGE_CONFIG="$gcfg" "$CTL" guests)" || fail "guests failed: $out"
 grep -q "ghpr" <<<"$out" || fail "guests missing the guest channel: $out"
-grep -q "collab" <<<"$out" || fail "guests missing the profile: $out"
-grep -q "42" <<<"$out" || fail "guests missing the guest id: $out"
+grep -q "42" <<<"$out" || fail "guests missing the editor id: $out"
+grep -q "7" <<<"$out" || fail "guests missing the viewer id: $out"
 grep -q "solo" <<<"$out" && fail "guests listed a channel with no guests: $out"
 
 # --- missing credentials fail cleanly ------------------------------------------------
