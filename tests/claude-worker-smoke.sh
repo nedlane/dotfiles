@@ -26,11 +26,13 @@ mkdir -p "$stub" "$proj"
 # (and `new-session` creates it, like the real thing); `capture-pane` plays
 # back $TMUX_STUB_SCREEN. The input box is modelled so submission verification
 # can be exercised: `load-buffer` stages the paste text into $TMUX_STUB_BUFFER
-# and `paste-buffer` reflects it into the box (`❯ <text>`), unless
-# $TMUX_STUB_DROP_PASTE simulates a booting/compacting TUI that drops input.
+# and `paste-buffer` reflects it into the box. A single-line paste echoes as
+# `❯ <text>`; a MULTI-line paste collapses to a chip `❯ [Pasted text #N +K
+# lines]` (as the real composer does — the literal text never appears). Either
+# is suppressed by $TMUX_STUB_DROP_PASTE, simulating a booting/compacting TUI.
 # `send-keys` advances to a staged $TMUX_STUB_NEXT_SCREEN (dismissing a dialog)
-# if present; otherwise `-l TEXT` types into the box and Enter submits it
-# (clearing the box) unless $TMUX_STUB_STICKY simulates swallowed keys.
+# if present; otherwise C-c clears the box, `-l TEXT` types into it, and Enter
+# submits it (clearing the box) unless $TMUX_STUB_STICKY simulates swallowed keys.
 cat > "$stub/tmux" <<'STUB'
 #!/usr/bin/env bash
 echo "tmux $*" >> "$TMUX_STUB_LOG"
@@ -41,7 +43,14 @@ case "$1" in
   load-buffer)  cat > "$TMUX_STUB_BUFFER" ;;
   paste-buffer)
     if [[ -z "${TMUX_STUB_DROP_PASTE:-}" && -e "${TMUX_STUB_BUFFER:-/nonexistent}" ]]; then
-      printf '❯ %s\n' "$(cat "$TMUX_STUB_BUFFER")" > "$TMUX_STUB_SCREEN"
+      nl="$(wc -l < "$TMUX_STUB_BUFFER")"
+      if [[ "$nl" -ge 1 ]]; then
+        n=$(( $(cat "${TMUX_STUB_PASTE_N:-/dev/null}" 2>/dev/null || echo 0) + 1 ))
+        echo "$n" > "${TMUX_STUB_PASTE_N:-/dev/null}"
+        printf '❯ [Pasted text #%s +%s lines]\n' "$n" "$nl" > "$TMUX_STUB_SCREEN"
+      else
+        printf '❯ %s\n' "$(cat "$TMUX_STUB_BUFFER")" > "$TMUX_STUB_SCREEN"
+      fi
     fi
     ;;
   capture-pane)
@@ -55,6 +64,8 @@ case "$1" in
   send-keys)
     if [[ -n "${TMUX_STUB_NEXT_SCREEN:-}" && -e "${TMUX_STUB_NEXT_SCREEN:-}" ]]; then
       mv "$TMUX_STUB_NEXT_SCREEN" "$TMUX_STUB_SCREEN"
+    elif [[ "$*" == *C-c* ]]; then
+      printf '❯ \n' > "$TMUX_STUB_SCREEN"
     elif [[ "$*" == *" -l "* ]]; then
       printf '❯ %s\n' "${*#*-l }" > "$TMUX_STUB_SCREEN"
     elif [[ "$*" == *Enter* && -z "${TMUX_STUB_STICKY:-}" ]]; then
@@ -75,6 +86,7 @@ run() {
   TMUX_STUB_LOG="$tmux_log" TMUX_STUB_ALIVE="$base/alive" \
     TMUX_STUB_SCREEN="$base/screen" TMUX_STUB_NEXT_SCREEN="$base/next-screen" \
     TMUX_STUB_SCREEN_AFTER_READ="$base/screen-after" TMUX_STUB_BUFFER="$base/buffer" \
+    TMUX_STUB_PASTE_N="$base/paste-n" \
     CLAUDE_WORKERS_STATE="$state" CLAUDE_WORKER_SEND_DELAY=0 \
     CLAUDE_WORKER_POLL=0 CLAUDE_WORKER_START_TIMEOUT=3 \
     PATH="$stub:$PATH" "$ROOT/hosts/wsl-desktop/bin/claude-worker" "$@"
@@ -133,6 +145,36 @@ export TMUX_STUB_DROP_PASTE=1
 run send impl "lost message" >/dev/null 2>&1 && fail "send into a dropped paste falsely reported success"
 unset TMUX_STUB_DROP_PASTE
 grep -q -- "send-keys -t =cw-impl: Enter" "$tmux_log" && fail "send pressed Enter before confirming the paste landed"
+printf '> idle\n❯ \n' > "$base/screen"
+
+# The bug Ned repro'd from the orchestrator: a MULTI-line paste collapses to a
+# "[Pasted text #N]" chip, so the message text never echoes on the ❯ line.
+# cmd_send must recognise that chip as LANDED (not a dropped/booting paste) and
+# still submit it — the old probe-in-box check died with a false "never reached
+# the input box" on every multi-line send.
+: > "$tmux_log"
+printf 'Line one of the brief\nLine two\nLine three\n' | run send impl - \
+  || fail "multi-line paste (collapsed to a chip) falsely reported a send failure"
+grep -q -- "send-keys -t =cw-impl: Enter" "$tmux_log" || fail "chip send never pressed Enter"
+printf '> idle\n❯ \n' > "$base/screen"
+
+# Anti-stacking: a leftover paste chip in the box is cleared with a SINGLE
+# Ctrl-C before the new paste, so a re-send never stacks "[Pasted #1][Pasted
+# #2]" — and never a double Ctrl-C (which would quit Claude Code).
+printf '❯ [Pasted text #1 +4 lines]\n' > "$base/screen"
+: > "$tmux_log"
+printf 'fresh one\nfresh two\n' | run send impl - || fail "re-send over a pending chip failed"
+cc="$(grep -c -- 'send-keys -t =cw-impl: C-c' "$tmux_log")"
+[[ "$cc" -eq 1 ]] || fail "expected exactly one Ctrl-C to clear the pending chip, got $cc: $(cat "$tmux_log")"
+cc_line="$(grep -n -- 'C-c' "$tmux_log" | head -1 | cut -d: -f1)"
+paste_line="$(grep -n -- 'paste-buffer' "$tmux_log" | head -1 | cut -d: -f1)"
+[[ "$cc_line" -lt "$paste_line" ]] || fail "Ctrl-C not sent before the re-paste"
+printf '> idle\n❯ \n' > "$base/screen"
+
+# A clean box (no chip) must NOT get a spurious Ctrl-C on a normal send.
+: > "$tmux_log"
+run send impl "plain single line"
+grep -q -- 'C-c' "$tmux_log" && fail "normal send should not send Ctrl-C: $(cat "$tmux_log")"
 printf '> idle\n❯ \n' > "$base/screen"
 
 # --- send --type sends literal keystrokes (slash commands), no paste ------------
