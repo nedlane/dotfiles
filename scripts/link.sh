@@ -144,18 +144,21 @@ done
 
 # --- desktop-only extras ----------------------------------------------------
 # The agent control plane (claude-worker & friends) runs only on the desktop;
-# other hosts just get the shared claude-launch above.
+# other hosts just get the shared claude-launch above. It lives in the
+# `agent-bridge` submodule (hosts/wsl-desktop/agent-bridge/) — run
+# `git submodule update --init` if the dir is empty.
 if [[ "$host" == wsl-desktop ]]; then
-  for tool in "$DIR"/hosts/wsl-desktop/bin/*; do
+  for tool in "$DIR"/hosts/wsl-desktop/agent-bridge/bin/*; do
+    [ -f "$tool" ] || continue   # skip a stray __pycache__/ dir
     link_one "$tool" "$HOME/.local/bin/$(basename "$tool")"
   done
   # Claude Code skills: pinging Ned on Discord, managing the bridge.
   for skill in discord-notify claude-bridge; do
-    link_one "$DIR/hosts/wsl-desktop/claude/skills/$skill" \
+    link_one "$DIR/hosts/wsl-desktop/agent-bridge/skills/$skill" \
       "$HOME/.claude/skills/$skill"
   done
   # The Discord<->worker bridge daemon (enable: systemctl --user enable --now claude-bridge).
-  link_one "$DIR/hosts/wsl-desktop/systemd/claude-bridge.service" \
+  link_one "$DIR/hosts/wsl-desktop/agent-bridge/systemd/claude-bridge.service" \
     "$HOME/.config/systemd/user/claude-bridge.service"
 fi
 

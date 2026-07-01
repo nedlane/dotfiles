@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Verifies term-shot (hosts/wsl-desktop/bin/term-shot): captured terminal text
+# Verifies term-shot (hosts/wsl-desktop/agent-bridge/bin/term-shot): captured terminal text
 # on stdin renders to a valid PNG — the 👀 peek relies on this so a wide TUI
 # screen lands as a mobile-legible image instead of a scrolling code block.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SHOT="$ROOT/hosts/wsl-desktop/bin/term-shot"
+SHOT="$ROOT/hosts/wsl-desktop/agent-bridge/bin/term-shot"
 
 fail() { echo "term-shot smoke test failed: $*" >&2; exit 1; }
 

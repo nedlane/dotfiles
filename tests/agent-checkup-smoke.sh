@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Verifies the control-plane readiness check (hosts/wsl-desktop/bin/
+# Verifies the control-plane readiness check (hosts/wsl-desktop/agent-bridge/bin/
 # agent-checkup) against a fully stubbed environment: Claude subscription
 # detection, bridge runtime/credential checks, forbidden-env warnings,
 # missing-tool failures, and that no secret values are echoed.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CHECKUP="$ROOT/hosts/wsl-desktop/bin/agent-checkup"
+CHECKUP="$ROOT/hosts/wsl-desktop/agent-bridge/bin/agent-checkup"
 
 fail() {
   echo "agent-checkup smoke test failed: $*" >&2
@@ -37,7 +37,7 @@ printf '{"repos": {}}\n' > "$home/.config/claude-bridge/config.json"
 
 # run [env overrides...] -> runs agent-checkup in the stub environment.
 run() {
-  env -i HOME="$home" PATH="$stub:$ROOT/shared/bin:$ROOT/hosts/wsl-desktop/bin:/usr/bin:/bin" \
+  env -i HOME="$home" PATH="$stub:$ROOT/shared/bin:$ROOT/hosts/wsl-desktop/agent-bridge/bin:/usr/bin:/bin" \
     "$@" "$CHECKUP" 2>&1
 }
 

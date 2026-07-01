@@ -17,6 +17,7 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
+          submodules: recursive   # agent-bridge control plane (smokes + link)
 
       - name: Install validation tools
         run: |
@@ -38,11 +39,10 @@ jobs:
       - name: Run ShellCheck
         run: |
           shellcheck scripts/*.sh scripts/lib/*.sh tests/*.sh
-          # shared/bin mixes zsh (tmux-switch) and POSIX-sh tools, and the
-          # desktop control plane adds python (claude-bridge); shellcheck
-          # only parses sh/bash, so skip the rest by shebang — this covers
-          # any future tool dropped in here automatically.
-          for f in shared/bin/* hosts/wsl-desktop/bin/*; do
+          # shared/bin mixes zsh (tmux-switch) and POSIX-sh tools; shellcheck
+          # only parses sh/bash, so skip the rest by shebang. The agent-bridge
+          # control-plane tools are shellchecked in that submodule's own CI.
+          for f in shared/bin/*; do
             head -1 "$f" | grep -qE 'zsh|python' || shellcheck "$f"
           done
 
@@ -95,9 +95,6 @@ jobs:
       - name: Smoke-test bridge-ctl
         run: ./tests/bridge-ctl-smoke.sh
 
-      - name: Validate claude-bridge Python syntax
-        run: PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile hosts/wsl-desktop/bin/claude-bridge
-
       - name: Validate tmux config
         run: |
           home="$(mktemp -d)"
@@ -115,6 +112,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive   # link-smoke links the agent-bridge tools
 
       - name: Smoke-test all host overlays
         run: ./tests/link-smoke.sh

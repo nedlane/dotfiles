@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Verifies discord-notify (hosts/wsl-desktop/bin/discord-notify): chat-bound
+# Verifies discord-notify (hosts/wsl-desktop/agent-bridge/bin/discord-notify): chat-bound
 # workers and explicit discord:<id> targets route through the claude-bridge
 # (signed localhost event), everything else falls back to the webhook, worker
 # sessions are tagged, '-' reads stdin, and no secret ever leaks.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-NOTIFY="$ROOT/hosts/wsl-desktop/bin/discord-notify"
+NOTIFY="$ROOT/hosts/wsl-desktop/agent-bridge/bin/discord-notify"
 
 fail() {
   echo "discord-notify smoke test failed: $*" >&2

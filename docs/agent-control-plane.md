@@ -15,7 +15,7 @@ provider billing, anywhere.
             │                    (systemd user service, no LLM)
             │  claude-worker start/send
             ▼
-     claude-worker …             (hosts/wsl-desktop/bin, desktop-only)
+     claude-worker …             (agent-bridge submodule, desktop-only)
             │  tmux sessions cw-<name>
             ▼
       claude-launch              (shared/bin, used by `cl` everywhere)

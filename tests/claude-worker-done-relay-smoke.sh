@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Verifies the worker completion push (hosts/wsl-desktop/bin/
+# Verifies the worker completion push (hosts/wsl-desktop/agent-bridge/bin/
 # claude-worker-done-relay), a Claude Code Stop hook: when a thread-affine
 # worker (started with --chat) ends a turn, it sends an HMAC-signed event to
 # the local claude-bridge listener so it can post the worker's reply into
 # the repo channel, with the transcript path for exact text extraction.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-RELAY="$ROOT/hosts/wsl-desktop/bin/claude-worker-done-relay"
+RELAY="$ROOT/hosts/wsl-desktop/agent-bridge/bin/claude-worker-done-relay"
 
 fail() {
   echo "claude-worker-done-relay smoke test failed: $*" >&2

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Verifies bridge-ctl (hosts/wsl-desktop/bin/bridge-ctl), the tools-based
+# Verifies bridge-ctl (hosts/wsl-desktop/agent-bridge/bin/bridge-ctl), the tools-based
 # bridge interface for workers: addrepo posts a signed channel-creation
 # event, bad input fails before any network call, and repos lists the local
 # mapping. Nothing real is contacted.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CTL="$ROOT/hosts/wsl-desktop/bin/bridge-ctl"
+CTL="$ROOT/hosts/wsl-desktop/agent-bridge/bin/bridge-ctl"
 
 fail() {
   echo "bridge-ctl smoke test failed: $*" >&2
