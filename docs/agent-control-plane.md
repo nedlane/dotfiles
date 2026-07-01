@@ -55,15 +55,16 @@ provider billing, anywhere.
   any repo, directory doesn't matter) gets an extra injected brief teaching
   it `bridge-ctl`/`claude-worker`/`agent-checkup`, so `#orchestrator` is a
   natural-language remote for the whole plane — "spin up a worker on ghpr
-  and have it triage the failing tests" instead of bot commands. The `!`
-  commands keep working everywhere.
+  and have it triage the failing tests" instead of bot commands. The `/`
+  slash commands work everywhere too.
 - **Steering, not queueing.** Messages are delivered straight into the
   session even mid-turn (Claude Code natively treats typed-while-running
   input as steering); ⏳ marks delivered-while-busy, ✅ delivered-while-idle.
-  Messages starting with `/` are sent as typed keystrokes so Claude Code
-  slash commands execute. `!checkin` asks a running worker to post a 3-5
-  line progress update and keep going. Each relayed message is stamped with a
-  reminder to answer on Discord (the worker's terminal isn't visible to Ned).
+  A plain message starting with `/` that isn't a bridge slash command is sent
+  as typed keystrokes so Claude Code's own slash commands still execute.
+  `/checkin` asks a running worker to post a 3-5 line progress update and keep
+  going. Each relayed message is stamped with a reminder to answer on Discord
+  (the worker's terminal isn't visible to Ned).
 - **Rich inbound.** Attachments dropped into a channel are downloaded to the
   worker's `inbox/` and their local paths handed to the worker to read; a
   Discord reply relays a quoted snippet of what it answered; editing a
@@ -71,25 +72,29 @@ provider billing, anywhere.
 - **React 👀 to peek.** Reacting with 👀 on any message in a worker channel
   posts that worker's live TUI screen as an image (rendered by `term-shot`, so
   it scales on mobile instead of scrolling a 180-column code block) — same as
-  `!screen`, but no typing.
+  `/screen`, but no typing.
 - Only allowlisted Discord user ids are honored.
 
 ## Tools
 
-- **`claude-bridge`** (desktop only) — the daemon. Discord commands
-  (allowed users, any visible channel): `!status`, `!checkin [name]`,
-  `!model <model> [name]` (typed `/model`), `!clear [name]` (fresh context now
-  — restarts the worker *without* `--continue`, the deterministic wipe),
-  `!fresh [name]` (shut the worker down and arm a fresh next start — the next
-  message begins a brand-new session with no `--continue`, no resume-first; the
-  one-shot marker lives beside the worker's kept state and is consumed on that
-  next start), `!compact [name]` (typed `/compact`), `!stop [name]`,
-  `!restart [name]`,
-  `!screen [name]`, `!addrepo <name> <path>` (creates `#<name>` under the
-  Claude category and saves the mapping). Any message starting with `/` is
-  typed into the worker as keystrokes, so every Claude Code slash command
-  works from Discord (e.g. `/compact focus on the PR work`). Localhost event
-  listener on `127.0.0.1:8765` (HMAC-signed `X-Webhook-Signature`).
+- **`claude-bridge`** (desktop only) — the daemon. Control verbs are native
+  Discord **slash commands** (application commands, synced per-guild on
+  connect, gated to allowed users); the `worker` option defaults to the
+  channel's mapped worker: `/status`, `/checkin [worker]`,
+  `/model <model> [worker]`, `/clear [worker]` (fresh context now — restarts
+  the worker *without* `--continue`, the deterministic wipe), `/fresh
+  [worker]` (shut the worker down and arm a fresh next start — the next
+  message begins a brand-new session with no `--continue`, no resume-first;
+  the one-shot marker lives beside the worker's kept state and is consumed on
+  that next start), `/compact [focus] [worker]`, `/stop [worker]`, `/restart
+  [worker]`, `/screen [worker]`, `/addrepo <name> <path>` (creates `#<name>`
+  under the category and saves the mapping). Because slash commands arrive as
+  interactions, a plain message starting with `/` that *isn't* one of these is
+  still typed into the worker as keystrokes, so any other Claude Code slash
+  command works from Discord (e.g. `/cost`). The bot needs the
+  `applications.commands` OAuth scope for the slash commands to register.
+  Localhost event listener on `127.0.0.1:8765` (HMAC-signed
+  `X-Webhook-Signature`).
 - **`bridge-ctl`** (desktop only) — the tools-based bridge interface for
   workers and shells: `bridge-ctl addrepo <name> <path>` creates and maps a
   repo channel via a signed event (returns the channel id);
@@ -154,11 +159,13 @@ provider billing, anywhere.
 ## Setup / first smoke test
 
 1. `pip3 install --user discord.py`; bot needs Message Content +
-   Manage Channels in the Discord developer portal.
+   Manage Channels in the Discord developer portal, and must be invited with
+   the `bot` **and** `applications.commands` OAuth scopes (the latter lets the
+   slash commands register).
 2. `./scripts/link.sh`, then `systemctl --user enable --now claude-bridge`
    (linger should be on: `loginctl enable-linger $USER`).
 3. `agent-checkup` — fix anything red.
-4. In Discord: `!addrepo scratch /tmp`, then message `#scratch`
+4. In Discord: `/addrepo scratch /tmp`, then message `#scratch`
    ("reply with the word ready"). Expect 🚀/✅ reactions, the reply posted
    back, and `💤` after the idle window.
 
