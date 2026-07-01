@@ -17,7 +17,22 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
-          submodules: recursive   # agent-bridge control plane (smokes + link)
+
+      - name: Init agent-bridge submodule (best effort)
+        id: submod
+        # The control plane lives in a separate repo. While it is private the
+        # default GITHUB_TOKEN can't clone it, so init is best-effort: on
+        # success the control-plane smokes run; otherwise they're skipped and
+        # covered by the agent-bridge repo's own CI. (Once it's public this
+        # just works.)
+        run: |
+          if git submodule update --init hosts/wsl-desktop/agent-bridge 2>/dev/null \
+             && [ -f hosts/wsl-desktop/agent-bridge/bin/claude-bridge ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::agent-bridge submodule unavailable — skipping control-plane smokes"
+          fi
 
       - name: Install validation tools
         run: |
@@ -74,25 +89,35 @@ jobs:
       - name: Smoke-test claude-launch
         run: ./tests/claude-launch-smoke.sh
 
+      # Control-plane smokes exercise the agent-bridge submodule scripts; they
+      # run only when the submodule is checked out (see the init step above).
+      # When it isn't, coverage falls to the agent-bridge repo's own CI.
       - name: Smoke-test claude-worker
+        if: steps.submod.outputs.present == 'true'
         run: ./tests/claude-worker-smoke.sh
 
       - name: Smoke-test claude-worker-todo-relay
+        if: steps.submod.outputs.present == 'true'
         run: ./tests/claude-worker-todo-relay-smoke.sh
 
       - name: Smoke-test claude-worker-done-relay
+        if: steps.submod.outputs.present == 'true'
         run: ./tests/claude-worker-done-relay-smoke.sh
 
       - name: Smoke-test agent-checkup
+        if: steps.submod.outputs.present == 'true'
         run: ./tests/agent-checkup-smoke.sh
 
       - name: Smoke-test discord-notify
+        if: steps.submod.outputs.present == 'true'
         run: ./tests/discord-notify-smoke.sh
 
       - name: Smoke-test claude-bridge
+        if: steps.submod.outputs.present == 'true'
         run: ./tests/claude-bridge-smoke.sh
 
       - name: Smoke-test bridge-ctl
+        if: steps.submod.outputs.present == 'true'
         run: ./tests/bridge-ctl-smoke.sh
 
       - name: Validate tmux config
@@ -112,10 +137,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          submodules: recursive   # link-smoke links the agent-bridge tools
 
       - name: Smoke-test all host overlays
+        # link-smoke skips the agent-bridge link assertions when the (possibly
+        # private) submodule isn't checked out, so it runs without it.
         run: ./tests/link-smoke.sh
 
   neovim:
