@@ -8,7 +8,7 @@ intelligence in the loop.
 ## Decisions (agreed 2026-06-13)
 
 - **Channel-per-repo, no threads.** Channels live under the Discord category
-  `Claude` (id `111111111111111111`). The bot has Manage Channels and
+  `Claude` (a private guild category). The bot has Manage Channels and
   creates repo channels itself via `!addrepo`.
 - **One worker per repo.** All messages in `#ghpr` go to worker `ghpr`.
 - **Idle reaping + resume.** Workers idle longer than `idle_minutes`
@@ -16,7 +16,7 @@ intelligence in the loop.
   `claude --continue`, restoring the conversation from Claude's own session
   history. Never hundreds of instances.
 - **Reuse the existing bot token** (`~/.config/claude-workers/discord-bot-token`).
-- Only `allowed_users` (Ned: 222222222222222222) are honored.
+- Only `allowed_users` (the owner's Discord id) are honored.
 
 ## Components
 

@@ -10,7 +10,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # PYTHONDONTWRITEBYTECODE: importing the script must not drop a __pycache__
-# into hosts/wsl-desktop/bin (repository-smoke checks executability there).
+# into hosts/wsl-desktop/agent-bridge/bin (repository-smoke checks executability there).
 BRIDGE="$ROOT/hosts/wsl-desktop/agent-bridge/bin/claude-bridge" PYTHONDONTWRITEBYTECODE=1 python3 - <<'PY'
 import hashlib, hmac, importlib.util, json, os, sys, tempfile
 

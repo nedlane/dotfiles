@@ -12,5 +12,5 @@ useDefault = true
 [allowlist]
 description = "Non-secret Discord snowflake ids used as smoke-test fixtures"
 regexes = [
-  '''222222222222222222''',
+  '''100000000000000001''',
 ]

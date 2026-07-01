@@ -68,7 +68,9 @@ PY
 }
 
 TRANSCRIPT="$(extract_transcript)"
-MSG_COUNT="$(echo "$TRANSCRIPT" | grep -c '^\*\*' 2>/dev/null || echo 0)"
+# grep -c already prints 0 on no match; `|| true` swallows its exit-1 so we
+# don't append a second "0" (which split the report line across two lines).
+MSG_COUNT="$(echo "$TRANSCRIPT" | grep -c '^\*\*' 2>/dev/null || true)"
 
 # ---------------------------------------------------------------------------
 # build handoff document
