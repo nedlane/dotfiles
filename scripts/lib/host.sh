@@ -8,6 +8,7 @@ dotfiles_detect_host() {
   else
     case "$(hostname -s 2>/dev/null || hostname)" in
       raspberrypi) printf '%s\n' pi ;;
+      tegra-ubuntu) printf '%s\n' av ;;
       *) hostname -s 2>/dev/null || hostname ;;
     esac
   fi
