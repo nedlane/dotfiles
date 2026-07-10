@@ -4,6 +4,11 @@
 set -g prefix C-b
 bind C-b send-prefix
 
+# This box runs bash, not zsh — override the shared config's zsh pin so tmux
+# panes spawn the shell the car actually uses. Sourced last, so it wins.
+set -g default-shell /usr/bin/bash
+set -g default-command /usr/bin/bash
+
 # Device identity consumed by the shared status bar (catppuccin peach).
 set -g @host_accent "#fab387"
 set -g @host_label " av"
