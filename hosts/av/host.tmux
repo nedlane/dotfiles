@@ -9,6 +9,12 @@ bind C-b send-prefix
 set -g default-shell /usr/bin/bash
 set -g default-command /usr/bin/bash
 
+# av: plain built-in tree switcher for leader-w. Overrides the shared config's
+# fzf popup switcher (tmux-switch) and its nested/remote gating
+# (tmux-local-client), which are not wanted on the car. host.tmux is sourced
+# last, so this bind wins over the shared one.
+bind w choose-tree -Zw
+
 # Device identity consumed by the shared status bar (catppuccin peach).
 set -g @host_accent "#fab387"
 set -g @host_label " av"
