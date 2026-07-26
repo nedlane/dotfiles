@@ -68,3 +68,7 @@ fi
 if [[ -n "$DOTFILES_SHOW_BATTERY" ]]; then
   POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS+=(battery)
 fi
+
+# Share one Cargo build dir across all crates so dependencies compile once
+# instead of a separate multi-GB target/ per project.
+export CARGO_TARGET_DIR="$HOME/.cargo/target-shared"
