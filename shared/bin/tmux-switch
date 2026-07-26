@@ -16,6 +16,18 @@
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:$HOME/.local/bin:$PATH"
 setopt pipefail
 
+# Peers whose Tailscale SSH login user is not the local one. `av` (the race-car
+# Jetson) is a tagged device: the tailnet policy refuses `nedlane`, and the box
+# only has the vendor `nvidia` account. Everything else logs in as-is.
+typeset -A PEER_SSH_USER=(av nvidia)
+
+# Menu entries stay keyed on the bare peer name (`av: main`); only the SSH
+# target gets the user prefix.
+ssh_target() {
+  local peer=$1 user=${PEER_SSH_USER[$1]}
+  [[ -n "$user" ]] && print -r -- "$user@$peer" || print -r -- "$peer"
+}
+
 switch_and_prune() {
   local target=$1
 
@@ -47,7 +59,8 @@ choice=$(
           (
             # drop the peer's own proxy sessions (names with '/') — they're
             # routing artifacts and would build confusing re-proxy chains.
-            timeout 6 tailscale ssh "$peer" -- 'tmux list-sessions -F "#S"' \
+            timeout 6 tailscale ssh "$(ssh_target "$peer")" \
+              -- 'tmux list-sessions -F "#S"' \
               2>/dev/null | grep -v '/' | sed "/^$/d; s|^|$peer: |"
           ) &
         done
@@ -68,12 +81,13 @@ fi
 # --- remote peer: open/attach the proxy session -----------------------------
 peer=$tag
 proxy="$peer/$name"
+target=$(ssh_target "$peer")
 
 if ! tmux has-session -t "$proxy" 2>/dev/null; then
   # Session names originate on a remote peer. Quote them before constructing
   # the proxy shell command so a malicious name cannot inject shell syntax.
   tmux new-session -d -s "$proxy" \
-    "exec tailscale ssh ${(q)peer} -t -- tmux new -A -s ${(q)name}"
+    "exec tailscale ssh ${(q)target} -t -- tmux new -A -s ${(q)name}"
 fi
 # Hide THIS machine's (outer) status bar for the proxy session so only the
 # remote machine's own status bar is visible — no stacked double bars. The
