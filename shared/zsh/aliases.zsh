@@ -27,3 +27,32 @@ alias docker-compose="docker compose"
 cl() {
   "${DOTFILES_DIR:-$HOME/dotfiles}/shared/bin/claude-launch" "$@"
 }
+
+# Claude Code via a client's proxy (work engagements). Credentials live in
+# ~/.config/claude-work/env — OUTSIDE the dotfiles repo, chmod 600 — and are
+# exported only for the launched process, never into the calling shell. On
+# first run the function prompts for both values (key input hidden, so it also
+# stays out of shell history) and writes the file itself. To rotate or remove:
+# edit or delete that file.
+clw() {
+  local envfile="${XDG_CONFIG_HOME:-$HOME/.config}/claude-work/env"
+  if [[ ! -r "$envfile" ]]; then
+    echo "clw: first run — storing proxy credentials in $envfile"
+    local key url
+    read -rs "key?ANTHROPIC_API_KEY (input hidden): "; echo
+    read -r "url?ANTHROPIC_BASE_URL: "
+    if [[ -z "$key" || -z "$url" ]]; then
+      echo "clw: both values are required; nothing saved" >&2
+      return 1
+    fi
+    mkdir -p "${envfile:h}"
+    (umask 077; printf 'ANTHROPIC_API_KEY=%s\nANTHROPIC_BASE_URL=%s\n' \
+      "$key" "$url" > "$envfile")
+  fi
+  # Subshell so the secrets are exported only around the exec, not leaked
+  # into the interactive shell's environment.
+  (
+    set -a; source "$envfile"; set +a
+    exec claude --permission-mode auto "$@"
+  )
+}
