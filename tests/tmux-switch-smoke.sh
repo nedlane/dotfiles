@@ -47,6 +47,16 @@ kill_line="$(grep -n 'tmux kill-session -t pi/main' "$log" | cut -d: -f1)"
 if grep -q 'tmux kill-session -t desktop/work' "$log"; then
   fail "selected remote proxy was pruned"
 fi
+# Peers absent from PEER_SSH_USER keep the bare hostname as the SSH target.
+grep -q 'tailscale ssh desktop -t' "$log" \
+  || fail "unmapped peer did not use the bare hostname as its SSH target"
+rm -f "$log"
+
+# av is a tagged device: the tailnet policy refuses the local user, so the
+# proxy must log in as nvidia while the session name stays "av/main".
+log="$(run_case 'av: main' $'1|main')"
+grep -q 'tmux new-session -d -s av/main exec tailscale ssh nvidia@av -t -- tmux new -A -s main' "$log" \
+  || fail "av proxy did not SSH as nvidia@av"
 rm -f "$log"
 
 echo "tmux switch smoke tests passed"
