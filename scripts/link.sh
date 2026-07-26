@@ -165,8 +165,9 @@ fi
 # --- mac-only extras -------------------------------------------------------
 if [[ "$host" == mac ]]; then
   link_one "$DIR/hosts/mac/alacritty" "$HOME/.config/alacritty"
+  link_one "$DIR/hosts/mac/kitty" "$HOME/.config/kitty"
   # Tailscale desktop-access convenience commands (Mac client only).
-  for tool in desk desk-attach; do
+  for tool in desk desk-attach kitty-tmux-main; do
     link_one "$DIR/hosts/mac/bin/$tool" "$HOME/.local/bin/$tool"
   done
 fi
