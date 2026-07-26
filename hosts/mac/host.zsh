@@ -15,6 +15,13 @@ if [[ -d /opt/homebrew/opt/coreutils/libexec/gnubin ]]; then
   export PATH="/opt/homebrew/opt/coreutils/libexec/gnubin:$PATH"
 fi
 
+# opencode: its installer appends a hardcoded PATH line to ~/.zshrc, which here
+# is the SHARED zshrc symlink — so the Mac-only path leaked onto every host.
+# Kept in the laptop overlay instead, and guarded so it's a no-op if uninstalled.
+if [[ -d "$HOME/.opencode/bin" ]]; then
+  export PATH="$HOME/.opencode/bin:$PATH"
+fi
+
 # Docker Desktop CLI completions
 fpath=("$HOME/.docker/completions" $fpath)
 
