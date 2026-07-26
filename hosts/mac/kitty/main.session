@@ -1,0 +1,5 @@
+# One OS window, one kitty window, one child process: tmux.
+os_window_state maximized
+enabled_layouts stack
+layout stack
+launch --title tmux-main /Users/nedlane/.local/bin/kitty-tmux-main

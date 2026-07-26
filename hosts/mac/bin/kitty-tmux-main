@@ -1,0 +1,26 @@
+#!/usr/bin/env zsh
+# Launch the main local tmux session from GUI terminal apps.
+
+if [[ -z ${KITTY_TMUX_LOGIN_SHELL:-} ]]; then
+  export KITTY_TMUX_LOGIN_SHELL=1
+  exec /bin/zsh -l "$0" "$@"
+fi
+
+emulate -L zsh -o errexit -o nounset -o pipefail
+
+tmux_bin="${commands[tmux]:-}"
+if [[ -z "$tmux_bin" ]]; then
+  for candidate in /opt/homebrew/bin/tmux /usr/local/bin/tmux /usr/bin/tmux; do
+    if [[ -x "$candidate" ]]; then
+      tmux_bin="$candidate"
+      break
+    fi
+  done
+fi
+
+if [[ -z "$tmux_bin" ]]; then
+  print -u2 "kitty-tmux-main: tmux not found"
+  exit 127
+fi
+
+exec "$tmux_bin" new-session -A -s main
