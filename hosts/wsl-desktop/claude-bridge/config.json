@@ -1,0 +1,398 @@
+{
+  "category_id": 1515015058009231370,
+  "allowed_users": [
+    656356624965042180
+  ],
+  "idle_minutes": 300,
+  "listen_port": 8765,
+  "repos": {
+    "1515107016048115785": {
+      "name": "orchestrator",
+      "dir": "/home/nedlane",
+      "harness": "codex"
+    },
+    "1515525847094792263": {
+      "name": "m1-core-stack",
+      "dir": "/home/nedlane/projects/m1-core-stack",
+      "guests": [
+        494361867138105344
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "claude"
+    },
+    "1517336933171335230": {
+      "name": "vehicle-dynamics",
+      "dir": "/home/nedlane/projects/Vehicle-Dynamics",
+      "guests": [
+        494361867138105344
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "claude"
+    },
+    "1517339775747625101": {
+      "name": "slip-angle-extractor",
+      "dir": "/home/nedlane/projects/slip_angle_extractor",
+      "guests": [
+        494361867138105344
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1520695908025499699": {
+      "name": "photo-pipeline",
+      "dir": "/home/nedlane/projects/photo-pipeline",
+      "harness": "codex"
+    },
+    "1521113789620293672": {
+      "name": "dotfiles",
+      "dir": "/home/nedlane/dotfiles",
+      "harness": "codex"
+    },
+    "1521324055452450970": {
+      "name": "ev-m1",
+      "dir": "/home/nedlane/projects/EV-M1",
+      "guests": [
+        494361867138105344,
+        308145698363146241
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "claude"
+    },
+    "1521721611437211880": {
+      "name": "notion",
+      "dir": "/home/nedlane/projects/notion",
+      "guests": [
+        494361867138105344
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1521732820890943619": {
+      "name": "risk-compliance",
+      "dir": "/home/nedlane/projects/risk-compliance",
+      "guests": [
+        297578870809427969
+      ],
+      "viewers": [
+        494361867138105344
+      ],
+      "profile": "collab",
+      "harness": "claude"
+    },
+    "1521750093441663039": {
+      "name": "av-m1",
+      "dir": "/home/nedlane/projects/m1-core-stack/AV-M1",
+      "guests": [
+        494361867138105344,
+        297578870809427969,
+        308145698363146241
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1521920597297336320": {
+      "name": "welcome",
+      "dir": "/home/nedlane/guest-workspaces/welcome",
+      "profile": "greeter",
+      "harness": "claude"
+    },
+    "1521931717437296752": {
+      "name": "agent-bridge",
+      "dir": "/home/nedlane/projects/agent-bridge",
+      "harness": "codex",
+      "guests": [
+        494361867138105344
+      ],
+      "viewers": [],
+      "profile": "collab"
+    },
+    "1522149183467819058": {
+      "name": "av-m1-rebase-bot",
+      "dir": "/home/nedlane/.local/state/av-m1-rebase-bot/AV-M1",
+      "guests": [],
+      "viewers": [
+        297578870809427969
+      ],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1522874304612794458": {
+      "name": "av-simrig",
+      "dir": "/home/nedlane/projects/av-simrig",
+      "guests": [
+        494361867138105344,
+        297578870809427969,
+        308145698363146241
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "claude"
+    },
+    "1522878685479436318": {
+      "name": "uqr_ws",
+      "dir": "/home/nedlane/uqracing/uqr_ws",
+      "guests": [
+        494361867138105344,
+        297578870809427969,
+        308145698363146241
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "claude"
+    },
+    "1522886547664273482": {
+      "name": "prospectus",
+      "dir": "/home/nedlane/projects/prospectus",
+      "guests": [
+        297578870809427969
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1522888589191413780": {
+      "name": "sponsorship-management",
+      "dir": "/home/nedlane/projects/sponsorship-management",
+      "harness": "codex"
+    },
+    "1523212194530197559": {
+      "name": "eufs-sim",
+      "dir": "/home/nedlane/projects/eufs_sim",
+      "guests": [
+        494361867138105344
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1525039346661720165": {
+      "name": "pp-steering",
+      "dir": "/home/nedlane/uqracing/pp-steering",
+      "guests": [
+        494361867138105344
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1525106000301133835": {
+      "name": "av-pc",
+      "dir": "/home/nedlane/projects/av-pc",
+      "guests": [
+        494361867138105344,
+        297578870809427969,
+        308145698363146241
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1525109080920817821": {
+      "name": "path_planner_unknown",
+      "dir": "/home/nedlane/uqracing/uqr_ws/src/path_planner_unknown",
+      "guests": [
+        494361867138105344,
+        297578870809427969
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1525109083420622888": {
+      "name": "stack",
+      "dir": "/home/nedlane/uqracing/uqr_ws/src/stack",
+      "guests": [
+        494361867138105344,
+        297578870809427969
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1525109085500997652": {
+      "name": "vam2",
+      "dir": "/home/nedlane/uqracing/uqr_ws/src/vam2",
+      "guests": [
+        494361867138105344,
+        297578870809427969
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1525109087493427201": {
+      "name": "dash_debug",
+      "dir": "/home/nedlane/uqracing/uqr_ws/src/dash_debug",
+      "guests": [
+        494361867138105344,
+        297578870809427969
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "claude"
+    },
+    "1525109089863077909": {
+      "name": "watchdog",
+      "dir": "/home/nedlane/uqracing/uqr_ws/src/watchdog",
+      "guests": [
+        494361867138105344,
+        297578870809427969
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1525109092061020282": {
+      "name": "bicycle_model",
+      "dir": "/home/nedlane/uqracing/uqr_ws/src/bicycle_model",
+      "guests": [
+        494361867138105344,
+        297578870809427969
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1525109093834952715": {
+      "name": "mission_launchers",
+      "dir": "/home/nedlane/uqracing/uqr_ws/src/mission_launchers",
+      "guests": [
+        494361867138105344,
+        297578870809427969
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1525109095823310889": {
+      "name": "uqr_msgs",
+      "dir": "/home/nedlane/uqracing/uqr_ws/src/uqr_msgs",
+      "guests": [
+        494361867138105344,
+        297578870809427969
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1525109098788552734": {
+      "name": "eufs_msgs",
+      "dir": "/home/nedlane/uqracing/uqr_ws/src/eufs_msgs",
+      "guests": [
+        494361867138105344,
+        297578870809427969
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1525109100625526907": {
+      "name": "glim-stack",
+      "dir": "/home/nedlane/uqracing/uqr_ws/src/glim-stack",
+      "guests": [
+        494361867138105344,
+        297578870809427969
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1526147855172243466": {
+      "name": "uqr-slides",
+      "dir": "/home/nedlane/projects/school visit template",
+      "guests": [
+        494361867138105344
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1526753877054193696": {
+      "name": "authentik",
+      "dir": "/home/nedlane/meta/inra/authentik",
+      "harness": "codex"
+    },
+    "1526754379758309386": {
+      "name": "immich",
+      "dir": "/home/nedlane/meta/inra/immich",
+      "harness": "codex",
+      "guests": [],
+      "viewers": [],
+      "profile": "collab"
+    },
+    "1528607800371187732": {
+      "name": "design-lite",
+      "dir": "/home/nedlane/projects/design-lite",
+      "guests": [
+        494361867138105344,
+        297578870809427969
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex"
+    },
+    "1529068632787779696": {
+      "name": "ci-runner",
+      "dir": "/home/nedlane/projects/ci-runner",
+      "harness": "codex",
+      "guests": [
+        494361867138105344
+      ],
+      "viewers": [],
+      "profile": "collab"
+    },
+    "1529109970107498596": {
+      "name": "reminder-app",
+      "dir": "/home/nedlane/projects/reminder-app"
+    },
+    "1529139576826892358": {
+      "name": "monitors",
+      "dir": "/home/nedlane/projects/monitors"
+    },
+    "1529285240214782153": {
+      "name": "merch-design",
+      "dir": "/home/nedlane/projects/merch-design",
+      "guests": [
+        494361867138105344
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "claude"
+    },
+    "1533050535467290774": {
+      "name": "christian",
+      "dir": "/home/nedlane/guest-workspaces/christian",
+      "harness": "claude",
+      "guests": [
+        494361867138105344
+      ],
+      "viewers": [],
+      "profile": "collab"
+    }
+  },
+  "welcome_channel": "1521920597297336320",
+  "requests_channel": "1521920603047854292",
+  "usage_limits": {
+    "channels": {},
+    "users": {
+      "494361867138105344": {
+        "cost": 500.0,
+        "window_seconds": 86400
+      },
+      "297578870809427969": {
+        "cost": 500.0,
+        "window_seconds": 86400
+      },
+      "308145698363146241": {
+        "cost": 500.0,
+        "window_seconds": 86400
+      }
+    }
+  }
+}
