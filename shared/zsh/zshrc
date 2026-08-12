@@ -21,7 +21,10 @@ if [[ "$DOTFILES_HOST" != mac ]] \
    && [[ $- == *i* ]] && [[ -z "$TMUX" ]] \
    && [[ "$TERM_PROGRAM" != vscode && -z "$VSCODE_INJECTION" ]] \
    && [[ -z "$INSIDE_EMACS" ]]; then
-  exec tmux new -A -s main
+  if tmux new -A -s main; then
+    exit
+  fi
+  echo "tmux exited with status $? -- landing in a plain shell so the error above stays visible" >&2
 fi
 
 # --- oh-my-zsh + powerlevel10k ----------------------------------------------
