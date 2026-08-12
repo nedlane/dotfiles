@@ -142,6 +142,16 @@ for tool in "$DIR"/shared/bin/*; do
   link_one "$tool" "$HOME/.local/bin/$(basename "$tool")"
 done
 
+# --- always-on hosts: tmux server at boot -----------------------------------
+# Every host except the mac sources persist-sessions.tmux (resurrect +
+# continuum), and pairs it with a user unit that starts the tmux server at
+# boot — so continuum's restore runs detached, before anyone ssh'es in.
+# Enable once per host: systemctl --user daemon-reload && systemctl --user enable --now tmux-main
+if [[ "$host" != mac ]]; then
+  link_one "$DIR/shared/systemd/user/tmux-main.service" \
+    "$HOME/.config/systemd/user/tmux-main.service"
+fi
+
 # --- desktop-only extras ----------------------------------------------------
 # The agent control plane (claude-worker & friends) runs only on the desktop;
 # other hosts just get the shared claude-launch above. It lives in the
