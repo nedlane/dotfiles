@@ -124,6 +124,7 @@ a private repo, so a plain clone won't fetch it and nothing here depends on it.
 ```text
 shared/
   bin/tmux-switch            local + Tailscale tmux session switcher
+  claude/CLAUDE.md           global agent policy installed for Claude and Codex
   git/gitconfig              shared Git config for full-profile hosts
   git/gitconfig.local.example
                               template for private identity and signing config

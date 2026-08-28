@@ -10,6 +10,17 @@
   Signing is automatic; flags only get in the way.
 - If signing fails, stop and report the error — do not bypass it.
 
+## Branch names
+
+- Before every push, check the branch name with `git branch --show-current`.
+- Never push a branch whose name starts with an AI tool, provider, model, or
+  agent-harness namespace. Forbidden prefixes include, but are not limited to,
+  `ai/`, `agent/`, `claude/`, `codex/`, `copilot/`, `cursor/`, `gemini/`,
+  `opencode/`, `t3code/`, and `windsurf/`.
+- Rename such a branch to a neutral, project-appropriate name before pushing or
+  opening a pull request. Never create or update a remote branch under an AI
+  tool namespace unless I explicitly instruct you to do so.
+
 ## AI attribution
 
 - Never add `Co-Authored-By:

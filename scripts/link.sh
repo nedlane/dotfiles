@@ -79,11 +79,12 @@ link_one "$DIR/shared/nvim"           "$HOME/.config/nvim"
 # even minimal hosts (which skip the shared gitconfig) get the ignore rules.
 link_one "$DIR/shared/git/ignore"     "${XDG_CONFIG_HOME:-$HOME/.config}/git/ignore"
 
-# --- claude instructions (shared + optional host overlay) ------------------
-# ~/.claude/CLAUDE.md is generated (not symlinked) so host-specific sections
-# can be appended cleanly. Re-running link.sh regenerates it from source.
-generate_claude_md() {
-  local dst="$HOME/.claude/CLAUDE.md"
+# --- agent instructions (shared + optional host overlay) -------------------
+# Claude and Codex receive the same generated policy so they cannot drift.
+# Real files allow host-specific sections to be appended cleanly.
+generate_agent_instructions() {
+  local dst="$1"
+  local display_path="$2"
   local shared="$DIR/shared/claude/CLAUDE.md"
   local overlay="$DIR/hosts/$host/claude/CLAUDE.md"
   [ -e "$shared" ] || { echo "skip (no source): shared/claude/CLAUDE.md"; return; }
@@ -96,29 +97,30 @@ generate_claude_md() {
 
   # Already up-to-date real file — nothing to do
   if [ -f "$dst" ] && [ ! -L "$dst" ] && diff -q "$tmp" "$dst" >/dev/null 2>&1; then
-    echo "ok        .claude/CLAUDE.md"
+    echo "ok        $display_path"
     rm "$tmp"
     return
   fi
 
   # Back up any real file before overwriting
   if [ -e "$dst" ] && [ ! -L "$dst" ]; then
-    local bak="${BACKUP}/.claude/CLAUDE.md"
+    local bak="${BACKUP}/$display_path"
     mkdir -p "$(dirname "$bak")"
     cp "$dst" "$bak"
-    echo "backed up .claude/CLAUDE.md"
+    echo "backed up $display_path"
   fi
   # Remove symlink (from a prior link_one run) so we write a real file
   [ -L "$dst" ] && rm "$dst"
   mv "$tmp" "$dst"
   if [ -e "$overlay" ]; then
-    echo "generated .claude/CLAUDE.md (shared + $host overlay)"
+    echo "generated $display_path (shared + $host overlay)"
   else
-    echo "generated .claude/CLAUDE.md (shared only)"
+    echo "generated $display_path (shared only)"
   fi
   changed=1
 }
-generate_claude_md
+generate_agent_instructions "$HOME/.claude/CLAUDE.md" ".claude/CLAUDE.md"
+generate_agent_instructions "$HOME/.codex/AGENTS.md" ".codex/AGENTS.md"
 
 # --- git (full profile only) -----------------------------------------------
 # The shared gitconfig turns on SSH commit signing with a key the homelab

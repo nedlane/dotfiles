@@ -36,6 +36,19 @@ for host in "${hosts[@]}"; do
   assert_link "$home/.local/bin/claude-launch" "$ROOT/shared/bin/claude-launch"
   [[ "$(cat "$home/.config/dotfiles/host")" == "$host" ]] || fail "recorded host does not match $host"
 
+  expected_instructions="$home/expected-agent-instructions"
+  cat "$ROOT/shared/claude/CLAUDE.md" > "$expected_instructions"
+  if [[ -f "$ROOT/hosts/$host/claude/CLAUDE.md" ]]; then
+    printf '\n' >> "$expected_instructions"
+    cat "$ROOT/hosts/$host/claude/CLAUDE.md" >> "$expected_instructions"
+  fi
+  cmp -s "$expected_instructions" "$home/.claude/CLAUDE.md" \
+    || fail "$host generated the wrong .claude/CLAUDE.md"
+  cmp -s "$expected_instructions" "$home/.codex/AGENTS.md" \
+    || fail "$host generated the wrong .codex/AGENTS.md"
+  [[ ! -L "$home/.claude/CLAUDE.md" ]] || fail "$host generated CLAUDE.md as a symlink"
+  [[ ! -L "$home/.codex/AGENTS.md" ]] || fail "$host generated AGENTS.md as a symlink"
+
   backup="$(find "$home" -maxdepth 1 -type d -name 'dotfiles-pre-link-backup-*' -print -quit)"
   [[ -n "$backup" ]] || fail "$host did not create a backup"
   [[ -f "$backup/.zshrc" ]] || fail "$host did not back up .zshrc"
