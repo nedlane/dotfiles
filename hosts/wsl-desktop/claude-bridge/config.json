@@ -4,12 +4,16 @@
     656356624965042180
   ],
   "idle_minutes": 300,
+  "codex_backend": "app-server",
+  "listen_host": "127.0.0.1",
   "listen_port": 8765,
+  "machines": {},
   "repos": {
     "1515107016048115785": {
       "name": "orchestrator",
       "dir": "/home/nedlane",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1515525847094792263": {
       "name": "m1-core-stack",
@@ -19,7 +23,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "claude"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1517336933171335230": {
       "name": "vehicle-dynamics",
@@ -29,7 +34,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "claude"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1517339775747625101": {
       "name": "slip-angle-extractor",
@@ -39,17 +45,20 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1520695908025499699": {
       "name": "photo-pipeline",
       "dir": "/home/nedlane/projects/photo-pipeline",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1521113789620293672": {
       "name": "dotfiles",
       "dir": "/home/nedlane/dotfiles",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1521324055452450970": {
       "name": "ev-m1",
@@ -60,7 +69,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "claude"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1521721611437211880": {
       "name": "notion",
@@ -70,7 +80,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1521732820890943619": {
       "name": "risk-compliance",
@@ -82,7 +93,8 @@
         494361867138105344
       ],
       "profile": "collab",
-      "harness": "claude"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1521750093441663039": {
       "name": "av-m1",
@@ -94,7 +106,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1521920597297336320": {
       "name": "welcome",
@@ -110,7 +123,8 @@
         494361867138105344
       ],
       "viewers": [],
-      "profile": "collab"
+      "profile": "collab",
+      "backend": "app-server"
     },
     "1522149183467819058": {
       "name": "av-m1-rebase-bot",
@@ -120,7 +134,8 @@
         297578870809427969
       ],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1522874304612794458": {
       "name": "av-simrig",
@@ -132,7 +147,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "claude"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1522878685479436318": {
       "name": "uqr_ws",
@@ -144,7 +160,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "claude"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1522886547664273482": {
       "name": "prospectus",
@@ -154,12 +171,14 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1522888589191413780": {
       "name": "sponsorship-management",
       "dir": "/home/nedlane/projects/sponsorship-management",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1523212194530197559": {
       "name": "eufs-sim",
@@ -169,7 +188,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1525039346661720165": {
       "name": "pp-steering",
@@ -179,7 +199,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1525106000301133835": {
       "name": "av-pc",
@@ -191,7 +212,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1525109080920817821": {
       "name": "path_planner_unknown",
@@ -202,7 +224,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1525109083420622888": {
       "name": "stack",
@@ -213,7 +236,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1525109085500997652": {
       "name": "vam2",
@@ -224,7 +248,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1525109087493427201": {
       "name": "dash_debug",
@@ -235,7 +260,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "claude"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1525109089863077909": {
       "name": "watchdog",
@@ -246,7 +272,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1525109092061020282": {
       "name": "bicycle_model",
@@ -257,7 +284,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1525109093834952715": {
       "name": "mission_launchers",
@@ -268,7 +296,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1525109095823310889": {
       "name": "uqr_msgs",
@@ -279,7 +308,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1525109098788552734": {
       "name": "eufs_msgs",
@@ -290,7 +320,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1525109100625526907": {
       "name": "glim-stack",
@@ -301,7 +332,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1526147855172243466": {
       "name": "uqr-slides",
@@ -311,12 +343,14 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1526753877054193696": {
       "name": "authentik",
       "dir": "/home/nedlane/meta/inra/authentik",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1526754379758309386": {
       "name": "immich",
@@ -324,7 +358,8 @@
       "harness": "codex",
       "guests": [],
       "viewers": [],
-      "profile": "collab"
+      "profile": "collab",
+      "backend": "app-server"
     },
     "1528607800371187732": {
       "name": "design-lite",
@@ -335,7 +370,8 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1529068632787779696": {
       "name": "ci-runner",
@@ -345,15 +381,19 @@
         494361867138105344
       ],
       "viewers": [],
-      "profile": "collab"
+      "profile": "collab",
+      "backend": "app-server"
     },
     "1529109970107498596": {
       "name": "reminder-app",
-      "dir": "/home/nedlane/projects/reminder-app"
+      "dir": "/home/nedlane/projects/reminder-app",
+      "backend": "app-server"
     },
     "1529139576826892358": {
       "name": "monitors",
-      "dir": "/home/nedlane/projects/monitors"
+      "dir": "/home/nedlane/projects/monitors",
+      "backend": "app-server",
+      "harness": "codex"
     },
     "1529285240214782153": {
       "name": "merch-design",
@@ -363,17 +403,46 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "claude"
+      "harness": "codex",
+      "backend": "app-server"
     },
     "1533050535467290774": {
       "name": "christian",
       "dir": "/home/nedlane/guest-workspaces/christian",
-      "harness": "claude",
+      "harness": "codex",
       "guests": [
         494361867138105344
       ],
       "viewers": [],
-      "profile": "collab"
+      "profile": "collab",
+      "backend": "app-server"
+    },
+    "1534055214246527086": {
+      "name": "deco-3801",
+      "dir": "/home/nedlane/guest-workspaces/deco-3801",
+      "guests": [
+        494361867138105344
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "harness": "codex",
+      "backend": "app-server"
+    },
+    "1535168678524358666": {
+      "name": "social-media",
+      "dir": "/home/nedlane/projects/social-media",
+      "guests": [
+        494361867138105344,
+        297578870809427969
+      ],
+      "viewers": [],
+      "profile": "collab",
+      "backend": "app-server"
+    },
+    "1536705723474378852": {
+      "name": "harness-tool",
+      "dir": "/home/nedlane/projects/harness_tool",
+      "backend": "app-server"
     }
   },
   "welcome_channel": "1521920597297336320",
