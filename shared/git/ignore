@@ -24,3 +24,5 @@ Desktop.ini
 
 # Direnv local overrides
 .envrc.local
+
+**/.claude/settings.local.json
