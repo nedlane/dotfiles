@@ -2,8 +2,7 @@
 # ---------------------------------------------------------------------------
 # Safe multi-host dotfiles linker.
 # Detects the host (or takes one as $1), records it, and symlinks the shared
-# config + this host's overlay into place. NEVER deletes your data: anything
-# real that's in the way is moved to a timestamped backup first.
+# config + this host's overlay into place, replacing managed targets.
 #
 #   ./scripts/link.sh              # auto-detect host
 #   ./scripts/link.sh wsl-desktop  # force a host
@@ -12,7 +11,6 @@ set -euo pipefail
 
 DIR="${DOTFILES_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles"
-BACKUP="$HOME/dotfiles-pre-link-backup-$(date +%Y%m%d-%H%M%S)"
 source "$DIR/scripts/lib/host.sh"
 changed=0
 
@@ -51,9 +49,8 @@ link_one() {
     return
   fi
   if [ -e "$dst" ] || [ -L "$dst" ]; then
-    mkdir -p "$BACKUP/$(dirname "${dst#"$HOME"/}")"
-    mv "$dst" "$BACKUP/${dst#"$HOME"/}"
-    echo "backed up ${dst#"$HOME"/}"
+    rm -rf -- "$dst"
+    echo "replaced  ${dst#"$HOME"/}"
   fi
   ln -s "$src" "$dst"
   changed=1
@@ -69,10 +66,9 @@ link_one "$DIR/shared/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
 link_one "$DIR/shared/tmux/persist-sessions.tmux" "$HOME/.config/tmux/persist-sessions.tmux"
 # A stray ~/.tmux.conf would shadow the XDG path above — move it aside.
 if [ -e "$HOME/.tmux.conf" ] && [ ! -L "$HOME/.tmux.conf" ]; then
-  mkdir -p "$BACKUP"
-  mv "$HOME/.tmux.conf" "$BACKUP/.tmux.conf"
+  rm -- "$HOME/.tmux.conf"
   changed=1
-  echo "backed up .tmux.conf (was shadowing XDG tmux.conf)"
+  echo "removed .tmux.conf (was shadowing XDG tmux.conf)"
 fi
 link_one "$DIR/shared/nvim"           "$HOME/.config/nvim"
 # Global Git ignore — Git auto-reads this XDG path regardless of profile, so
@@ -147,7 +143,7 @@ fi
 
 echo
 if [[ "$changed" == 1 ]]; then
-  echo "Replaced files saved to: $BACKUP"
+  echo "Managed configuration updated."
 else
   echo "All links already in place — nothing to back up."
 fi

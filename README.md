@@ -60,9 +60,7 @@ To only refresh symlinks without installing anything:
 ./scripts/link.sh minipc      # or explicitly select a host
 ```
 
-The linker records the selected host in `~/.config/dotfiles/host`. Existing
-files in the way are moved to a timestamped `~/dotfiles-pre-link-backup-*`
-directory; they are never deleted.
+The linker records the selected host in `~/.config/dotfiles/host`. Managed targets are replaced directly without local backups.
 
 For a full-profile machine, create the private Git identity include after the
 first link:

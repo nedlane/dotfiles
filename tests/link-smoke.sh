@@ -39,10 +39,8 @@ for host in "${hosts[@]}"; do
   [[ ! -e "$home/.claude/CLAUDE.md" ]] || fail "public linker generated personal instructions"
   [[ ! -e "$home/.codex/AGENTS.md" ]] || fail "public linker generated personal instructions"
 
-  backup="$(find "$home" -maxdepth 1 -type d -name 'dotfiles-pre-link-backup-*' -print -quit)"
-  [[ -n "$backup" ]] || fail "$host did not create a backup"
-  [[ -f "$backup/.zshrc" ]] || fail "$host did not back up .zshrc"
-  [[ -f "$backup/.tmux.conf" ]] || fail "$host did not back up shadowing .tmux.conf"
+  [[ ! -e "$home/.tmux.conf" ]] || fail "shadowing tmux config remains"
+  [[ -z "$(find "$home" -maxdepth 1 -name 'dotfiles-pre-link-backup-*' -print)" ]] || fail "unexpected backup"
 
   case "$host" in
     mac)
