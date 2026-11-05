@@ -124,7 +124,6 @@ a private repo, so a plain clone won't fetch it and nothing here depends on it.
 ```text
 shared/
   bin/tmux-switch            local + Tailscale tmux session switcher
-  claude/CLAUDE.md           global agent policy installed for Claude and Codex
   git/gitconfig              shared Git config for full-profile hosts
   git/gitconfig.local.example
                               template for private identity and signing config
@@ -175,3 +174,12 @@ syntax.
 ## License
 
 [MIT](LICENSE)
+
+## Personal skills and instructions
+
+The private ~/projects/orchestrator checkout owns personal skills and global
+instructions for both coding tools, including host overlays. scripts/link.sh
+invokes its Python installer with the selected host. Without that checkout,
+the public linker leaves personal instructions and skills untouched. Override
+the checkout location with ORCHESTRATOR_DIR. Bridge service configuration
+remains in dotfiles during the gradual phase-out.

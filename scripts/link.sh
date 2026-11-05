@@ -79,48 +79,14 @@ link_one "$DIR/shared/nvim"           "$HOME/.config/nvim"
 # even minimal hosts (which skip the shared gitconfig) get the ignore rules.
 link_one "$DIR/shared/git/ignore"     "${XDG_CONFIG_HOME:-$HOME/.config}/git/ignore"
 
-# --- agent instructions (shared + optional host overlay) -------------------
-# Claude and Codex receive the same generated policy so they cannot drift.
-# Real files allow host-specific sections to be appended cleanly.
-generate_agent_instructions() {
-  local dst="$1"
-  local display_path="$2"
-  local shared="$DIR/shared/claude/CLAUDE.md"
-  local overlay="$DIR/hosts/$host/claude/CLAUDE.md"
-  [ -e "$shared" ] || { echo "skip (no source): shared/claude/CLAUDE.md"; return; }
-  mkdir -p "$(dirname "$dst")"
-
-  # Build expected content into a temp file
-  local tmp; tmp="$(mktemp)"
-  cat "$shared" > "$tmp"
-  [ -e "$overlay" ] && { printf '\n' >> "$tmp"; cat "$overlay" >> "$tmp"; }
-
-  # Already up-to-date real file — nothing to do
-  if [ -f "$dst" ] && [ ! -L "$dst" ] && diff -q "$tmp" "$dst" >/dev/null 2>&1; then
-    echo "ok        $display_path"
-    rm "$tmp"
-    return
-  fi
-
-  # Back up any real file before overwriting
-  if [ -e "$dst" ] && [ ! -L "$dst" ]; then
-    local bak="${BACKUP}/$display_path"
-    mkdir -p "$(dirname "$bak")"
-    cp "$dst" "$bak"
-    echo "backed up $display_path"
-  fi
-  # Remove symlink (from a prior link_one run) so we write a real file
-  [ -L "$dst" ] && rm "$dst"
-  mv "$tmp" "$dst"
-  if [ -e "$overlay" ]; then
-    echo "generated $display_path (shared + $host overlay)"
-  else
-    echo "generated $display_path (shared only)"
-  fi
-  changed=1
-}
-generate_agent_instructions "$HOME/.claude/CLAUDE.md" ".claude/CLAUDE.md"
-generate_agent_instructions "$HOME/.codex/AGENTS.md" ".codex/AGENTS.md"
+# --- private agent configuration ------------------------------------------
+# Personal policy and skills have one owner. Public-only installs skip it.
+orchestrator_dir="${ORCHESTRATOR_DIR:-$HOME/projects/orchestrator}"
+if [[ -f "$orchestrator_dir/scripts/deploy.py" ]]; then
+  python3 "$orchestrator_dir/scripts/deploy.py" --host "$host" --apply
+else
+  echo "skip (private orchestrator absent): agent instructions and skills"
+fi
 
 # --- git (full profile only) -----------------------------------------------
 # The shared gitconfig turns on SSH commit signing with a key the homelab
@@ -163,11 +129,6 @@ if [[ "$host" == wsl-desktop ]]; then
   for tool in "$DIR"/hosts/wsl-desktop/agent-bridge/bin/*; do
     [ -f "$tool" ] || continue   # skip a stray __pycache__/ dir
     link_one "$tool" "$HOME/.local/bin/$(basename "$tool")"
-  done
-  # Claude Code skills: pinging Ned on Discord, managing the bridge.
-  for skill in discord-notify claude-bridge; do
-    link_one "$DIR/hosts/wsl-desktop/agent-bridge/skills/$skill" \
-      "$HOME/.claude/skills/$skill"
   done
   # The Discord<->worker bridge daemon (enable: systemctl --user enable --now claude-bridge).
   link_one "$DIR/hosts/wsl-desktop/agent-bridge/systemd/claude-bridge.service" \

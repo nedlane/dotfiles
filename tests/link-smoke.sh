@@ -36,18 +36,8 @@ for host in "${hosts[@]}"; do
   assert_link "$home/.local/bin/claude-launch" "$ROOT/shared/bin/claude-launch"
   [[ "$(cat "$home/.config/dotfiles/host")" == "$host" ]] || fail "recorded host does not match $host"
 
-  expected_instructions="$home/expected-agent-instructions"
-  cat "$ROOT/shared/claude/CLAUDE.md" > "$expected_instructions"
-  if [[ -f "$ROOT/hosts/$host/claude/CLAUDE.md" ]]; then
-    printf '\n' >> "$expected_instructions"
-    cat "$ROOT/hosts/$host/claude/CLAUDE.md" >> "$expected_instructions"
-  fi
-  cmp -s "$expected_instructions" "$home/.claude/CLAUDE.md" \
-    || fail "$host generated the wrong .claude/CLAUDE.md"
-  cmp -s "$expected_instructions" "$home/.codex/AGENTS.md" \
-    || fail "$host generated the wrong .codex/AGENTS.md"
-  [[ ! -L "$home/.claude/CLAUDE.md" ]] || fail "$host generated CLAUDE.md as a symlink"
-  [[ ! -L "$home/.codex/AGENTS.md" ]] || fail "$host generated AGENTS.md as a symlink"
+  [[ ! -e "$home/.claude/CLAUDE.md" ]] || fail "public linker generated personal instructions"
+  [[ ! -e "$home/.codex/AGENTS.md" ]] || fail "public linker generated personal instructions"
 
   backup="$(find "$home" -maxdepth 1 -type d -name 'dotfiles-pre-link-backup-*' -print -quit)"
   [[ -n "$backup" ]] || fail "$host did not create a backup"
@@ -70,10 +60,6 @@ for host in "${hosts[@]}"; do
       if [[ -f "$ROOT/hosts/wsl-desktop/agent-bridge/bin/claude-bridge" ]]; then
         for tool in claude-worker claude-worker-todo-relay claude-worker-done-relay agent-checkup; do
           assert_link "$home/.local/bin/$tool" "$ROOT/hosts/wsl-desktop/agent-bridge/bin/$tool"
-        done
-        for skill in discord-notify claude-bridge; do
-          assert_link "$home/.claude/skills/$skill" \
-            "$ROOT/hosts/wsl-desktop/agent-bridge/skills/$skill"
         done
         assert_link "$home/.config/systemd/user/claude-bridge.service" \
           "$ROOT/hosts/wsl-desktop/agent-bridge/systemd/claude-bridge.service"
