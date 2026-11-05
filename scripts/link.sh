@@ -145,5 +145,5 @@ echo
 if [[ "$changed" == 1 ]]; then
   echo "Managed configuration updated."
 else
-  echo "All links already in place — nothing to back up."
+  echo "All links already in place."
 fi
