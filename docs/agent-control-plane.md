@@ -1,179 +1,54 @@
-# Local agent control plane
+# Desktop agent bridge
 
-Desktop-only setup that turns Discord into a remote control for interactive
-Claude Code workers running in tmux on this machine. There is **no LLM in
-the routing path** — a small deterministic bridge maps Discord channels to
-workers; Claude Code, on the Claude subscription via its normal interactive
-login, is the only intelligence. No Anthropic API keys, no OpenRouter, no
-provider billing, anywhere.
+The desktop runs a deterministic Discord bridge alongside T3 Code. T3 Code is
+the project workspace and provides linked-machine operations. The bridge maps
+Discord channels to persistent workers; it does not call a model to route messages.
 
-```
-        Discord                  #<repo> channels under the "Claude" category
-            │  bot (gateway connection, Message Content intent)
-            ▼
-      claude-bridge              deterministic pipe; python daemon
-            │                    (systemd user service, no LLM)
-            │  claude-worker start/send
-            ▼
-     claude-worker …             (agent-bridge submodule, desktop-only)
-            │  tmux sessions cw-<name>
-            ▼
-      claude-launch              (shared/bin, used by `cl` everywhere)
-            │
-            ▼
-  interactive Claude Code        (Claude subscription, remote-control mode)
-       │                │
-       │                └─ discord-notify / todo relay → repo channel
-       │  Stop hook (claude-worker-done-relay, signed localhost event)
-       ▼
-      claude-bridge ───────────▶ worker's reply posted to the repo channel
-```
+## Source and installation
 
-## Model
+Live source is the private `agent-bridge` submodule at
+`~/dotfiles/hosts/wsl-desktop/agent-bridge`. Its `bin/` tools are linked into
+`~/.local/bin` by `scripts/link.sh wsl-desktop`. The systemd user unit is
+`claude-bridge`.
 
-- **Channel-per-repo, one worker per repo, no threads.** A config file maps
-  Discord channel ids to `{name, dir}`. Your message in `#ghpr` goes to
-  worker `ghpr` in that repo; the worker's reply comes back to `#ghpr`.
-- **Push-first: the worker is the publisher.** Every worker starts with an
-  injected system-prompt protocol: message Ned via `discord-notify` ONLY
-  when the task is complete, it is blocked on a question, or a check-in was
-  requested — multi-hour tasks run silently with no per-turn chatter, and
-  workers create/address other channels with `bridge-ctl` and
-  `discord-notify -t` (tools, not screen reading).
-- **Fallback replies are exact.** When a turn ends and the worker didn't
-  message Ned itself, the bridge extracts the final assistant message
-  verbatim from the session transcript (incremental byte-offset reads, so a
-  pre-flush Stop hook yields a retry instead of the previous turn's reply),
-  split at Discord's 2000-char limit, capped at 8k with a `!screen` hint.
-- **Idle reaping + resume.** Workers idle longer than `idle_minutes`
-  (default 45) are stopped. The next message revives the worker with
-  `claude --continue`, restoring the conversation from Claude Code's own
-  session history — never hundreds of instances, never lost context. `!fresh`
-  arms the opposite: shut the worker down and have the next message start a
-  brand-new session (no `--continue`) instead of resuming.
-- **An orchestrator channel.** The worker named `orchestrator` (mapped like
-  any repo, directory doesn't matter) gets an extra injected brief teaching
-  it `bridge-ctl`/`claude-worker`/`agent-checkup`, so `#orchestrator` is a
-  natural-language remote for the whole plane — "spin up a worker on ghpr
-  and have it triage the failing tests" instead of bot commands. The `/`
-  slash commands work everywhere too.
-- **Steering, not queueing.** Messages are delivered straight into the
-  session even mid-turn (Claude Code natively treats typed-while-running
-  input as steering); ⏳ marks delivered-while-busy, ✅ delivered-while-idle.
-  A plain message starting with `/` that isn't a bridge slash command is sent
-  as typed keystrokes so Claude Code's own slash commands still execute.
-  `/checkin` asks a running worker to post a 3-5 line progress update and keep
-  going. Each relayed message is stamped with a reminder to answer on Discord
-  (the worker's terminal isn't visible to Ned).
-- **Rich inbound.** Attachments dropped into a channel are downloaded to the
-  worker's `inbox/` and their local paths handed to the worker to read; a
-  Discord reply relays a quoted snippet of what it answered; editing a
-  message relays the new text as a correction to the live worker.
-- **React 👀 to peek.** Reacting with 👀 on any message in a worker channel
-  posts that worker's live TUI screen as an image (rendered by `term-shot`, so
-  it scales on mobile instead of scrolling a 180-column code block) — same as
-  `/screen`, but no typing.
-- Only allowlisted Discord user ids are honored.
+The submodule's README and command help document supported worker backends,
+Discord commands and bridge configuration. Personal host instructions and device
+access records live in `~/projects/orchestrator`.
 
-## Tools
+## Workers and commands
 
-- **`claude-bridge`** (desktop only) — the daemon. Control verbs are native
-  Discord **slash commands** (application commands, synced per-guild on
-  connect, gated to allowed users); the `worker` option defaults to the
-  channel's mapped worker: `/status`, `/checkin [worker]`,
-  `/model <model> [worker]`, `/clear [worker]` (fresh context now — restarts
-  the worker *without* `--continue`, the deterministic wipe), `/fresh
-  [worker]` (shut the worker down and arm a fresh next start — the next
-  message begins a brand-new session with no `--continue`, no resume-first;
-  the one-shot marker lives beside the worker's kept state and is consumed on
-  that next start), `/compact [focus] [worker]`, `/stop [worker]`, `/restart
-  [worker]`, `/screen [worker]`, `/addrepo <name> <path>` (creates `#<name>`
-  under the category and saves the mapping). Because slash commands arrive as
-  interactions, a plain message starting with `/` that *isn't* one of these is
-  still typed into the worker as keystrokes, so any other Claude Code slash
-  command works from Discord (e.g. `/cost`). The bot needs the
-  `applications.commands` OAuth scope for the slash commands to register.
-  Localhost event listener on `127.0.0.1:8765` (HMAC-signed
-  `X-Webhook-Signature`).
-- **`bridge-ctl`** (desktop only) — the tools-based bridge interface for
-  workers and shells: `bridge-ctl addrepo <name> <path>` creates and maps a
-  repo channel via a signed event (returns the channel id);
-  `bridge-ctl start <name>` starts that repo's worker through the bridge
-  (protocol injected, `--continue` resume — what the orchestrator uses);
-  `bridge-ctl repos` lists mappings.
-- **`claude-worker`** (desktop only) — worker lifecycle:
-  ```sh
-  claude-worker start impl --dir ~/projects/ghpr --chat discord:<channel>
-  claude-worker send impl "run the test suite"     # '-' reads stdin
-  claude-worker wait impl --for DONE --timeout 900 # synchronous use
-  claude-worker read impl 120 / list / status / restart / stop
-  ```
-  `start` blocks until the worker is ready and auto-accepts the folder-trust
-  dialog; `send` verifies submission (retries Enter while the input box
-  still holds the text, `--type` sends literal keystrokes for slash
-  commands); `--chat` records the repo channel and opts the worker into
-  push-on-done.
-- **`claude-worker-done-relay`** — Stop hook; signed `turn_ended` event
-  (with the transcript path) to the bridge when a chat-bound worker ends a
-  turn.
-- **`claude-worker-todo-relay`** — PostToolUse hook on
-  `TodoWrite|TaskCreate|TaskUpdate`; posts the live checklist to the repo
-  channel via the bridge (webhook fallback to the main channel).
-- **`discord-notify`** — one-shot message from any shell/Claude session;
-  workers default to their own repo channel. `-i <file>` attaches images/files
-  (repeatable); `--help` prints usage without sending.
-- **`claude-launch`** (shared, all hosts) — interactive remote-control
-  launcher behind `cl` and all workers; strips `ANTHROPIC_API_KEY`/Bedrock/
-  Vertex variables so nothing can push a session onto API billing.
-- **`agent-checkup`** (desktop only) — PASS/WARN/FAIL readiness report.
+Each configured project has a Discord channel and a worker named `cw-<name>`
+in tmux. `agent-worker` manages Claude Code and Codex workers. Codex workers
+support TUI and app-server backends; the channel configuration selects the harness.
 
-## State, config, secrets
-
-- Worker state: `~/.local/state/claude-workers/<name>/` (`meta` key=value,
-  `output.log` from pipe-pane, relay dedupe hash). No secrets.
-- Bridge config: `~/.config/claude-bridge/config.json` (`category_id`,
-  `allowed_users`, `idle_minutes`, `listen_port`, `repos`).
-- Secrets (all chmod 600, never in env or logs):
-  `~/.config/claude-workers/discord-bot-token` (bot token),
-  `~/.config/claude-workers/bridge-webhook` (listener URL + HMAC secret),
-  `~/.config/claude-workers/discord-webhook` (fallback channel webhook).
-
-## Hooks (in `~/.claude/settings.json`)
-
-```json
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "TodoWrite|TaskCreate|TaskUpdate",
-        "hooks": [{ "type": "command", "command": "claude-worker-todo-relay" }]
-      }
-    ],
-    "Stop": [
-      { "hooks": [{ "type": "command", "command": "claude-worker-done-relay" }] }
-    ]
-  }
-}
+```sh
+agent-worker list
+agent-worker status <name>
+agent-worker read <name> 120
+agent-worker send <name> "message"
+bridge-ctl repos
 ```
 
-## Setup / first smoke test
+Use `agent-worker --help` and `bridge-ctl --help` for lifecycle and configuration
+operations. The bridge's `/harness` command selects a channel's engine.
+Workers publish user-visible replies with `discord-notify`; terminal output
+alone is not a delivery channel.
 
-1. `pip3 install --user discord.py`; bot needs Message Content +
-   Manage Channels in the Discord developer portal, and must be invited with
-   the `bot` **and** `applications.commands` OAuth scopes (the latter lets the
-   slash commands register).
-2. `./scripts/link.sh`, then `systemctl --user enable --now claude-bridge`
-   (linger should be on: `loginctl enable-linger $USER`).
-3. `agent-checkup` — fix anything red.
-4. In Discord: `/addrepo scratch /tmp`, then message `#scratch`
-   ("reply with the word ready"). Expect 🚀/✅ reactions, the reply posted
-   back, and `💤` after the idle window.
+Worker state lives in `~/.local/state/claude-workers/<name>/`. Bridge configuration
+lives in `~/.config/claude-bridge/config.json`. Keep credentials in their existing
+stores and out of repositories, command output and logs.
 
-## Operating rules
+## Apply configuration
 
-- Workers run on the interactive Claude subscription only — no `claude -p`,
-  no API keys, no provider configs.
-- Workers don't push or edit main/master directly unless explicitly asked;
-  work lands on branches/PRs.
-- The bridge never interprets content; if routing logic needs "judgment,"
-  that judgment belongs in the worker's prompt, not the bridge.
+```sh
+./scripts/link.sh wsl-desktop
+systemctl --user restart claude-bridge
+systemctl --user status claude-bridge
+```
+
+The daemon loads configuration at startup, so restart it after changing daemon
+code or bridge configuration. Workers survive the daemon restart. Worker CLI
+changes are loaded on the next invocation.
+
+Keep the service, workers and Discord channels active until an explicit shutdown
+request. Changes to documentation do not require a service restart.

@@ -98,24 +98,20 @@ peers are queried in parallel with a timeout.
 Remote peers need Tailscale SSH, tmux, and a tailnet ACL that permits access.
 Windows peers and offline peers are excluded.
 
-## Agent Control Plane (desktop only)
+## Desktop agent bridge
 
-The `agent-bridge` submodule (at `hosts/wsl-desktop/agent-bridge/`) carries a
-Discord remote control for interactive Claude Code: `claude-bridge` maps repo
-channels to persistent tmux workers (`claude-worker`), with hook-driven
-reply/checklist relays and a readiness check (`agent-checkup`). No LLM in the
-routing path. The shared `claude-launch` backs the `cl` shorthand on every host.
+T3 Code is the project workspace. Personal instructions, skills and device
+records are maintained in the private `~/projects/orchestrator` checkout.
 
-This is a **private, desktop-only personal component** — the submodule points at
-a private repo, so a plain clone won't fetch it and nothing here depends on it.
-`link.sh` and `setup.sh` skip it cleanly when it's absent; only the owner's
-`wsl-desktop` box populates it. See
-[docs/agent-control-plane.md](docs/agent-control-plane.md) for the design.
+The desktop also runs a Discord bridge from the private `agent-bridge`
+submodule at `hosts/wsl-desktop/agent-bridge/`. The `claude-bridge` user service
+maps channels to persistent `cw-<name>` workers managed by `agent-worker`.
+Workers support Claude Code and Codex; channel configuration selects the harness.
+See [docs/agent-control-plane.md](docs/agent-control-plane.md) for operation.
 
-> **Heads up:** the `cl` shorthand launches Claude Code with
-> `--dangerously-skip-permissions` by default (full-trust, frictionless). If you
-> adopt these dotfiles, know that `cl` bypasses Claude Code's permission prompts
-> unless you change `shared/bin/claude-launch`.
+The linker installs bridge tools only for `wsl-desktop` when the submodule is
+populated. The shared `claude-launch` command backs the `cl` shorthand on all
+hosts and starts Claude Code with `--dangerously-skip-permissions`.
 
 ## Layout
 
@@ -180,4 +176,4 @@ instructions for both coding tools, including host overlays. scripts/link.sh
 invokes its Python installer with the selected host. Without that checkout,
 the public linker leaves personal instructions and skills untouched. Override
 the checkout location with ORCHESTRATOR_DIR. Bridge service configuration
-remains in dotfiles during the gradual phase-out.
+is maintained in the desktop dotfiles overlay.
