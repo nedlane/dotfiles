@@ -98,19 +98,17 @@ peers are queried in parallel with a timeout.
 Remote peers need Tailscale SSH, tmux, and a tailnet ACL that permits access.
 Windows peers and offline peers are excluded.
 
-## Desktop agent bridge
+## Archived desktop bridge
 
 T3 Code is the project workspace. Personal instructions, skills and device
 records are maintained in the private `~/projects/orchestrator` checkout.
 
-The desktop also runs a Discord bridge from the private `agent-bridge`
-submodule at `hosts/wsl-desktop/agent-bridge/`. The `claude-bridge` user service
-maps channels to persistent `cw-<name>` workers managed by `agent-worker`.
-Workers support Claude Code and Codex; channel configuration selects the harness.
-See [docs/agent-control-plane.md](docs/agent-control-plane.md) for operation.
+The former desktop Discord bridge is archived. Its service remains masked and
+setup does not install its daemon, notifications or relay hooks. Historical
+source and independent worker compatibility tools are retained.
 
-The linker installs bridge tools only for `wsl-desktop` when the submodule is
-populated. The shared `claude-launch` command backs the `cl` shorthand on all
+The linker retains independent worker compatibility tools on `wsl-desktop`
+when the historical submodule is populated. It does not install the bridge. The shared `claude-launch` command backs the `cl` shorthand on all
 hosts and starts Claude Code with `--dangerously-skip-permissions`.
 
 ## Layout
@@ -129,7 +127,7 @@ shared/
 hosts/
   mac/                       macOS shell, tmux, Alacritty, and helper commands
   wsl-desktop/               WSL2 shell and tmux overlay
-    agent-bridge/            Discord↔worker control plane (git submodule)
+    agent-bridge/            Archived control plane (git submodule)
   minipc/                    homelab overlays
   minipc2/
   pi/
