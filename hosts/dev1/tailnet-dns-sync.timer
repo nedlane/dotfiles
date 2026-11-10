@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh public Tailscale hostname records every minute
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=60s
+Unit=tailnet-dns-sync.service
+
+[Install]
+WantedBy=timers.target

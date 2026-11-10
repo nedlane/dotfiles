@@ -1,0 +1,21 @@
+[Unit]
+Description=Synchronize public internal.nedlane.com records with Tailscale
+Wants=network-online.target tailscaled.service
+After=network-online.target tailscaled.service
+
+[Service]
+Type=oneshot
+User=nedlane
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+LoadCredential=cloudflare-token:/home/nedlane/.config/cloudflare/tailnet-dns.token
+ExecStart=/usr/bin/python3 /home/nedlane/projects/orchestrator/scripts/sync-tailnet-dns.py --zone-id 246d70d189b16cea8e2eff5e1b3ad359 --token-file %d/cloudflare-token
+TimeoutStartSec=120
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+UMask=0077

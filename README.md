@@ -12,6 +12,7 @@ Host-specific prompt and tmux colors make the active machine obvious.
 | `minipc2` | homelab Linux | `C-b` | teal | minimal |
 | `pi` | Raspberry Pi | `C-b` | red | minimal |
 | `av` | Jetson race car | `C-b` | peach | minimal |
+| `dev1` | cloud VPS | `C-b` | purple | minimal |
 
 The full profile links the shared Git defaults. Identity and signing settings remain private in
 `~/.config/dotfiles/gitconfig.local`. The minimal profile skips the shared Git

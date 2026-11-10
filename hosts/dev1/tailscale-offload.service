@@ -1,0 +1,13 @@
+[Unit]
+Description=Enable UDP GRO forwarding for the dev1 exit node
+Wants=network-online.target
+After=network-online.target tailscaled.service
+ConditionPathExists=/sys/class/net/enp3s0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/ethtool -K enp3s0 rx-udp-gro-forwarding on rx-gro-list off
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
