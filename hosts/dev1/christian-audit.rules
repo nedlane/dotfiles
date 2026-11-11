@@ -1,0 +1,7 @@
+# Christian's external commands, including descendants that become root via sudo.
+# Login UID is set by pam_loginuid for SSH and survives uid changes.
+-a always,exit -F arch=b64 -S execve,execveat -F auid=1001 -k christian_exec
+-a always,exit -F arch=b32 -S execve,execveat -F auid=1001 -k christian_exec
+# Also cover processes running as Christian outside an SSH login session.
+-a always,exit -F arch=b64 -S execve,execveat -F uid=1001 -F auid!=1001 -k christian_exec
+-a always,exit -F arch=b32 -S execve,execveat -F uid=1001 -F auid!=1001 -k christian_exec
