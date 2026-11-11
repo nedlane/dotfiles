@@ -1,0 +1,31 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/glm-5.3-flash-free",
+  "small_model": "opencode/glm-5.3-flash-free",
+  "policies": [
+    { "action": "provider.use", "resource": "*", "effect": "deny" },
+    { "action": "provider.use", "resource": "opencode", "effect": "allow" },
+    { "action": "integration.use", "resource": "*", "effect": "deny" },
+    { "action": "integration.use", "resource": "opencode", "effect": "allow" }
+  ],
+  "providers": {
+    "opencode": {
+      "models": {
+        "beam-free": { "disabled": true },
+        "big-pickle": { "disabled": true },
+        "flint-40b-free": { "disabled": true },
+        "iceman-free": { "disabled": true },
+        "inkling-2-small-free": { "disabled": true },
+        "longcat-2.5-free": { "disabled": true },
+        "mimo-v2.6-flash-free": { "disabled": true },
+        "nemotron-3.5-lightning-free": { "disabled": true },
+        "nemotron-3.5-super-vl-free": { "disabled": true }
+      }
+    }
+  },
+  "agents": {
+    "title": { "model": "opencode/glm-5.3-flash-free" },
+    "summary": { "model": "opencode/glm-5.3-flash-free" },
+    "compaction": { "model": "opencode/glm-5.3-flash-free" }
+  }
+}
