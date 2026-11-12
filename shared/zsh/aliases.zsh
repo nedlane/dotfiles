@@ -53,6 +53,7 @@ clw() {
   # into the interactive shell's environment.
   (
     set -a; source "$envfile"; set +a
-    exec claude --permission-mode auto "$@"
+    # Keep work sessions isolated from personal CLAUDE.md, settings, and MCPs.
+    exec claude --bare --strict-mcp-config --permission-mode auto "$@"
   )
 }

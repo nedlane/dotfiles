@@ -1,0 +1,10 @@
+# Mac host Git overrides, included after shared/git/gitconfig.
+# GUI and launchd processes may lack Homebrew on PATH, so name gh absolutely.
+
+[credential "https://github.com"]
+	helper =
+	helper = !/opt/homebrew/bin/gh auth git-credential
+
+[credential "https://gist.github.com"]
+	helper =
+	helper = !/opt/homebrew/bin/gh auth git-credential

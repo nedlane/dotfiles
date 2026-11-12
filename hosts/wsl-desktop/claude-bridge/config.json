@@ -80,7 +80,7 @@
       ],
       "viewers": [],
       "profile": "collab",
-      "harness": "codex",
+      "harness": "claude",
       "backend": "app-server"
     },
     "1521732820890943619": {
@@ -140,11 +140,7 @@
     "1522874304612794458": {
       "name": "av-simrig",
       "dir": "/home/nedlane/projects/av-simrig",
-      "guests": [
-        494361867138105344,
-        297578870809427969,
-        308145698363146241
-      ],
+      "guests": [],
       "viewers": [],
       "profile": "collab",
       "harness": "codex",
