@@ -1,3 +1,0 @@
-[submodule "hosts/wsl-desktop/agent-bridge"]
-	path = hosts/wsl-desktop/agent-bridge
-	url = https://github.com/nedlane/agent-bridge.git

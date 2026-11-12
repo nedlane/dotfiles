@@ -14,9 +14,9 @@
 # the title is right even in shells that never sourced the zsh config.
 #
 # Deliberately subscription-only: API/provider billing env vars are stripped
-# before claude starts, so a calling environment (an orchestrator, a Discord
-# bridge, a misconfigured shell) can never flip the session onto Anthropic
-# API-key, Bedrock, or Vertex billing. Auth must come from the normal
+# before claude starts, so a calling environment (an orchestrator or a
+# misconfigured shell) can never flip the session onto Anthropic API-key,
+# Bedrock, or Vertex billing. Auth must come from the normal
 # interactive `claude` login.
 set -euo pipefail
 

@@ -26,6 +26,6 @@
 .oh-my-zsh/
 .tmux/
 
-# Python bytecode cache (e.g. from claude-bridge)
+# Python bytecode cache
 __pycache__/
 *.pyc

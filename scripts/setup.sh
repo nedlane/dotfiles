@@ -217,8 +217,6 @@ esac
 
 install_shell_tools
 
-# The archived desktop bridge is not initialized during setup.
-
 echo "== link dotfiles =="
 "$DIR/scripts/link.sh" "$host"
 install_tmux_plugins

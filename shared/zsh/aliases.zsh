@@ -21,9 +21,8 @@ alias docker-compose="docker compose"
 # Claude Code: launch an always-on remote-control session whose title is
 # "<host> / <dir>", so every device is identifiable in the claude.ai/code and
 # mobile session list. The naming/auth semantics live in the standalone
-# shared/bin/claude-launch (also used by claude-worker for orchestrated
-# sessions); `cl` is just the interactive shorthand. An explicit --name/-n
-# from the caller wins over the injected title.
+# shared/bin/claude-launch; `cl` is just the interactive shorthand. An explicit
+# --name/-n from the caller wins over the injected title.
 cl() {
   "${DOTFILES_DIR:-$HOME/dotfiles}/shared/bin/claude-launch" "$@"
 }

@@ -116,26 +116,6 @@ if [[ "$host" != mac ]]; then
     "$HOME/.config/systemd/user/tmux-main.service"
 fi
 
-# --- retired desktop bridge ------------------------------------------------
-# Keep compatibility tools for the independent worker web console, but never
-# install the archived Discord daemon, notification commands or relay hooks.
-if [[ "$host" == wsl-desktop ]]; then
-  for tool in "$DIR"/hosts/wsl-desktop/agent-bridge/bin/*; do
-    [ -f "$tool" ] || continue
-    case "$(basename "$tool")" in
-      agent-bridge|bridge-ctl|discord-notify|*-done-relay|*-todo-relay) continue ;;
-    esac
-    link_one "$tool" "$HOME/.local/bin/$(basename "$tool")"
-  done
-  for name in agent-bridge bridge-ctl discord-notify claude-worker-done-relay claude-worker-todo-relay codex-worker-done-relay; do
-    target="$HOME/.local/bin/$name"
-    if [[ -L "$target" && "$(readlink "$target")" == "$DIR/hosts/wsl-desktop/agent-bridge/bin/"* ]]; then
-      unlink "$target"
-    fi
-  done
-  link_one /dev/null "$HOME/.config/systemd/user/claude-bridge.service"
-fi
-
 # --- mac-only extras -------------------------------------------------------
 if [[ "$host" == mac ]]; then
   link_one "$DIR/hosts/mac/alacritty" "$HOME/.config/alacritty"

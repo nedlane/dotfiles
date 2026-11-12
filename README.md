@@ -99,18 +99,13 @@ peers are queried in parallel with a timeout.
 Remote peers need Tailscale SSH, tmux, and a tailnet ACL that permits access.
 Windows peers and offline peers are excluded.
 
-## Archived desktop bridge
+## Coding agents
 
 T3 Code is the project workspace. Personal instructions, skills and device
 records are maintained in the private `~/projects/orchestrator` checkout.
 
-The former desktop Discord bridge is archived. Its service remains masked and
-setup does not install its daemon, notifications or relay hooks. Historical
-source and independent worker compatibility tools are retained.
-
-The linker retains independent worker compatibility tools on `wsl-desktop`
-when the historical submodule is populated. It does not install the bridge. The shared `claude-launch` command backs the `cl` shorthand on all
-hosts and starts Claude Code with `--dangerously-skip-permissions`.
+The shared `claude-launch` command backs the `cl` shorthand on all hosts and
+starts Claude Code with `--dangerously-skip-permissions`.
 
 ## Layout
 
@@ -128,7 +123,6 @@ shared/
 hosts/
   mac/                       macOS shell, tmux, Alacritty, and helper commands
   wsl-desktop/               WSL2 shell and tmux overlay
-    agent-bridge/            Archived control plane (git submodule)
   minipc/                    homelab overlays
   minipc2/
   pi/
@@ -174,5 +168,4 @@ The private ~/projects/orchestrator checkout owns personal skills and global
 instructions for both coding tools, including host overlays. scripts/link.sh
 invokes its Python installer with the selected host. Without that checkout,
 the public linker leaves personal instructions and skills untouched. Override
-the checkout location with ORCHESTRATOR_DIR. Bridge service configuration
-is maintained in the desktop dotfiles overlay.
+the checkout location with ORCHESTRATOR_DIR.

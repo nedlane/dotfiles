@@ -52,31 +52,9 @@ for host in "${hosts[@]}"; do
     wsl-desktop)
       assert_link "$home/.gitconfig" "$ROOT/shared/git/gitconfig"
       [[ ! -e "$home/.config/alacritty" ]] || fail "$host unexpectedly linked Alacritty"
-      # The control plane lives in the agent-bridge submodule. link.sh skips
-      # linking files whose source is absent, so only assert these when the
-      # submodule is checked out (it may not be in CI while it's private).
-      if [[ -f "$ROOT/hosts/wsl-desktop/agent-bridge/bin/claude-bridge" ]]; then
-        for tool in claude-worker claude-worker-todo-relay claude-worker-done-relay agent-checkup; do
-          assert_link "$home/.local/bin/$tool" "$ROOT/hosts/wsl-desktop/agent-bridge/bin/$tool"
-        done
-        assert_link "$home/.config/systemd/user/claude-bridge.service" \
-          "$ROOT/hosts/wsl-desktop/agent-bridge/systemd/claude-bridge.service"
-        assert_link "$home/.local/bin/claude-bridge" "$ROOT/hosts/wsl-desktop/agent-bridge/bin/claude-bridge"
-      else
-        echo "note: agent-bridge submodule absent — skipping control-plane link assertions"
-      fi
       ;;
     *)
       [[ ! -e "$home/.gitconfig" ]] || fail "$host unexpectedly linked the full-profile Git config"
-      ;;
-  esac
-
-  # The agent control plane is desktop-only.
-  case "$host" in
-    wsl-desktop) ;;
-    *)
-      [[ ! -e "$home/.local/bin/claude-worker" ]] \
-        || fail "$host unexpectedly linked the desktop-only claude-worker"
       ;;
   esac
 
