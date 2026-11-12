@@ -23,7 +23,8 @@ tmux_log="$base/tmux.log"
 mkdir -p "$stub" "$proj"
 
 # Stub tmux: records argv; `has-session` succeeds iff $TMUX_STUB_ALIVE exists
-# (and `new-session` creates it, like the real thing); `capture-pane` plays
+# (and `new-session` creates it, like the real thing); `display-message`
+# reports the pane start command saved there; `capture-pane` plays
 # back $TMUX_STUB_SCREEN. The input box is modelled so submission verification
 # can be exercised: `load-buffer` stages the paste text into $TMUX_STUB_BUFFER
 # and `paste-buffer` reflects it into the box. A single-line paste echoes as
@@ -38,7 +39,12 @@ cat > "$stub/tmux" <<'STUB'
 echo "tmux $*" >> "$TMUX_STUB_LOG"
 case "$1" in
   has-session)  [[ -e "$TMUX_STUB_ALIVE" ]] ;;
-  new-session)  touch "$TMUX_STUB_ALIVE" ;;
+  # The alive marker holds the pane's start command, which the driver checks
+  # for CLAUDE_WORKER=<name> before trusting a session.
+  new-session)  printf ' %s \n' "$*" > "$TMUX_STUB_ALIVE" ;;
+  display-message)
+    [[ "$*" == *pane_start_command* ]] && cat "$TMUX_STUB_ALIVE" 2>/dev/null
+    ;;
   kill-session) rm -f "$TMUX_STUB_ALIVE" ;;
   load-buffer)  cat > "$TMUX_STUB_BUFFER" ;;
   paste-buffer)
@@ -91,7 +97,7 @@ run() {
     TMUX_STUB_PASTE_N="$base/paste-n" \
     CLAUDE_WORKERS_STATE="$state" CLAUDE_WORKER_SEND_DELAY=0 \
     CLAUDE_WORKER_POLL=0 CLAUDE_WORKER_START_TIMEOUT=3 \
-    PATH="$stub:$PATH" "$ROOT/hosts/wsl-desktop/agent-bridge/bin/claude-worker" "$@"
+    PATH="$stub:$PATH" "$ROOT/hosts/wsl-desktop/agent-bridge/bin/agent-worker" "$@"
 }
 
 # --- start: tmux session, worker label, pipe-pane log, meta, blocks to ready --
@@ -109,7 +115,7 @@ grep -qx "session=cw-impl" "$state/impl/meta" || fail "meta missing session"
 grep -qx "label=worker:impl" "$state/impl/meta" || fail "meta missing label"
 
 # --- start refuses while the worker is already running ------------------------
-touch "$base/alive"
+printf ' env CLAUDE_WORKER=impl claude-launch \n' > "$base/alive"
 run start impl --dir "$proj" >/dev/null 2>&1 && fail "double start unexpectedly succeeded"
 
 # --- invalid worker names are rejected ----------------------------------------

@@ -123,12 +123,13 @@ run -- -i "$base/nope.png" "ghost" >/dev/null 2>&1 && fail "missing attachment u
 run DISCORD_NOTIFY_MAX_BYTES=3 -- -i "$img" "too big" >/dev/null 2>&1 && fail "oversized attachment not rejected"
 [[ -s "$log" ]] && fail "oversized attachment still posted: $(cat "$log")"
 
-# --- bridge unreachable for a chat target: warn + fall back, never silently misroute ---
+# --- bridge unreachable for a chat target: fail closed, never post to the main webhook ---
 : > "$log"
-out="$(run CURL_FAIL_MATCH=8765 CLAUDE_WORKER=impl -- "reply text" 2>&1)" || fail "misroute fallback should still deliver: $out"
-grep -q "discord.example" "$log" || fail "misroute did not fall back to the webhook: $(cat "$log")"
-grep -q "bridge unreachable" "$log" || fail "misroute warning missing: $(cat "$log")"
-grep -q "discord:111:222" "$log" || fail "misroute warning did not name the intended target: $(cat "$log")"
+out="$(run CURL_FAIL_MATCH=8765 CLAUDE_WORKER=impl -- "reply text" 2>&1)" \
+  && fail "unreachable bridge unexpectedly succeeded: $out"
+grep -q "discord.example" "$log" && fail "chat-targeted message leaked to the main webhook: $(cat "$log")"
+grep -q "discord:111:222" <<<"$out" || fail "failure did not name the intended target: $out"
+grep -q "refusing main-channel fallback" <<<"$out" || fail "failure did not explain the refusal: $out"
 
 # --- a long body is split into multiple <=2000-char webhook posts ----------------------
 long="$(printf 'A%.0s' {1..2500})"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Verifies claude-bridge's pure helpers (hosts/wsl-desktop/agent-bridge/bin/claude-bridge)
+# Verifies claude-bridge's pure helpers (hosts/wsl-desktop/agent-bridge/bin/agent-bridge)
 # with plain python3 — no discord.py, no network, nothing launched: Discord
 # message splitting, transcript reply extraction, HMAC verification, config
 # round-trips, the fresh-start markers, and chat-target parsing. (The slash
@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # PYTHONDONTWRITEBYTECODE: importing the script must not drop a __pycache__
 # into hosts/wsl-desktop/agent-bridge/bin (repository-smoke checks executability there).
-BRIDGE="$ROOT/hosts/wsl-desktop/agent-bridge/bin/claude-bridge" PYTHONDONTWRITEBYTECODE=1 python3 - <<'PY'
+BRIDGE="$ROOT/hosts/wsl-desktop/agent-bridge/bin/agent-bridge" PYTHONDONTWRITEBYTECODE=1 python3 - <<'PY'
 import hashlib, hmac, importlib.util, json, os, sys, tempfile
 
 spec = importlib.util.spec_from_file_location(
@@ -101,15 +101,15 @@ with tempfile.TemporaryDirectory() as d:
 
 # --- worker start args inject the Discord protocol -------------------------------------
 args = b.start_args("ghpr", "/home/u/projects/ghpr", 123, resume=False)
-assert args[:3] == ["claude-worker", "start", "ghpr"], f"bad start argv: {args}"
+assert args[:3] == ["agent-worker", "start", "ghpr"], f"bad start argv: {args}"
 assert "--chat" in args and "discord:123" in args, "chat target missing"
 assert "--append-system-prompt" in args, "protocol not injected"
 proto = args[args.index("--append-system-prompt") + 1]
 assert "discord-notify" in proto, "protocol does not mention discord-notify"
 assert "check-in" in proto, "protocol does not cover check-ins"
-assert "--continue" not in args, "fresh start should not --continue"
+assert "--resume" not in args, "fresh start should not --resume"
 args = b.start_args("ghpr", "/x", 123, resume=True)
-assert "--continue" in args and args.index("--continue") > args.index("--"), "resume flag misplaced"
+assert "--resume" in args and args.index("--resume") < args.index("--"), "resume flag misplaced"
 
 # --- !fresh: shut down + fresh next start (arm marker, one-shot, no resume) ------------
 assert b.should_resume(True, False) is True, "state, no fresh armed -> resume"
@@ -136,7 +136,7 @@ assert b.system_prompt("ghpr") == b.PROTOCOL, "plain worker prompt should be PRO
 orch = b.system_prompt("orchestrator")
 assert orch.startswith(b.PROTOCOL), "orchestrator lost the base protocol"
 assert "bridge-ctl start" in orch, "orchestrator brief missing bridge-ctl start"
-assert "claude-worker send" in orch, "orchestrator brief missing claude-worker send"
+assert "agent-worker send" in orch, "orchestrator brief missing agent-worker send"
 args = b.start_args("orchestrator", "/home/u", 9, resume=False)
 assert "ORCHESTRATOR" in args[args.index("--append-system-prompt") + 1], \
     "start_args did not inject the orchestrator brief"
@@ -228,10 +228,8 @@ assert "--strict-mcp-config" in u, "utility must pin the MCP set"
 assert "/pdir/utility.mcp.json" in u, "utility must load its own mcp config"
 assert "--allowedTools" in u and any(x.startswith("mcp__") for x in u), "utility must pre-approve its MCP tools"
 assert "/pdir/utility.settings.json" in u, "utility must load its settings guardrails"
-c = b.profile_args("collab", "/pdir")
-assert "--enforce-perms" in c, "collab must enforce permissions (not bypass)"
-assert "--settings" in c and "/pdir/collab.settings.json" in c, "collab must load its deny-guardrail settings"
-assert "--tools" not in c, "collab keeps built-in dev tools"
+# collab is full trust like owner: nobody can answer a permission prompt over Discord.
+assert b.profile_args("collab", "/pdir") == [], "collab adds no flags (full trust)"
 # owner keeps the frictionless default (no enforce flag)
 assert "--enforce-perms" not in b.profile_args("owner"), "owner stays on the fast path"
 

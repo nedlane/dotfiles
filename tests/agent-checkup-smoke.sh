@@ -23,6 +23,17 @@ mkdir -p "$home/.claude" "$home/.config/claude-workers" "$home/.config/claude-br
 for tool in claude tmux; do
   printf '#!/usr/bin/env bash\necho "%s 1.0.0"\n' "$tool" > "$stub/$tool"
 done
+# Stub codex: installed, app-server available, subscription login present.
+cat > "$stub/codex" <<'STUB'
+#!/usr/bin/env bash
+case "$1" in
+  --version) echo "codex 1.0.0" ;;
+  login) echo "Logged in using ChatGPT" ;;
+esac
+STUB
+# The bridge installer links claude-bridge as a compatibility name for
+# agent-bridge (scripts/link.sh in the submodule); mirror that here.
+ln -s "$ROOT/hosts/wsl-desktop/agent-bridge/bin/agent-bridge" "$stub/claude-bridge"
 # Stub python3 (so `import discord` "succeeds") and systemctl (service active).
 printf '#!/usr/bin/env bash\nexit 0\n' > "$stub/python3"
 printf '#!/usr/bin/env bash\nexit 0\n' > "$stub/systemctl"
